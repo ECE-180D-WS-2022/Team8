@@ -15,11 +15,14 @@ pygame.display.set_caption('Cooking Papa 1.0')
 #define game variables
 tile_size = 50
 
+atStove = False
+atBoard = False
 
 #load images
 #sun_img = pygame.image.load('img/sun.png')
 bg_img = pygame.image.load('img/background.png')
-
+bg_chopping = pygame.image.load('img/chopping.png')
+bg_stove = pygame.image.load('img/stove.png')
 
 class Player():
 	def __init__(self, x, y):
@@ -40,6 +43,13 @@ class Player():
 		self.vel_y = 0
 		self.jumped = False
 		self.direction = 0
+
+	def isAtBoard(self):
+		if self.rect.x > screen_width/2 and self.rect.x > 200:
+			return True
+		else:
+			return False
+
 
 	def update(self):
 		dx = 0
@@ -163,7 +173,7 @@ world_data =[
 ]
 
 
-
+inWorld = True
 
 player = Player(100, screen_height - 130)
 world = World(world_data)
@@ -173,12 +183,33 @@ while run:
 
 	clock.tick(fps)
 
-	screen.blit(bg_img, (0, 0))
+	
 #screen.blit(sun_img, (100, 100))
 
-	world.draw()
+	if player.isAtBoard() == False:
+		atStove = True
+		atBoard = False
+	else:
+		atBoard = True
+		atStove = False
+	keys_pressed = pygame.key.get_pressed()
+	if keys_pressed[pygame.K_UP]:
+		inWorld=False
+	if keys_pressed[pygame.K_DOWN]:
+		inWorld=True
+	#if keys_pressed[pygame.K_a]: #a to go left
+	#	inWorld = False
+            
+	
+	if (inWorld):
+		screen.blit(bg_img, (0, 0))
+		world.draw()
+		player.update()
+	elif atBoard == True:
+		screen.blit(bg_chopping, (0, 0))
+	else:
+		screen.blit(bg_stove, (0, 0))
 
-	player.update()
 
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:

@@ -10,13 +10,20 @@ pygame.display.set_caption("Chopping")
 knife=pygame.image.load('knife.png')
 carrot =pygame.image.load('carrot2.png')
 carrot = pygame.transform.scale(carrot, (250, 220))
+carrot_1 = pygame.image.load('carrot_cut1.png')
+carrot_1 = pygame.transform.scale(carrot_1, (250, 220))
+carrot_2 = pygame.image.load('carrot_cut2.png')
+carrot_2 = pygame.transform.scale(carrot_2, (250, 220))
 knife = pygame.transform.scale(knife, (250, 220))
+knife2 = pygame.transform.scale(knife, (250, 220))
+knife3 = pygame.transform.scale(knife, (250, 220))
 board=pygame.image.load('cuttingboard2.png')
 board = pygame.transform.scale(board, (300, 320))
 
 pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 40)
 
+transparent = (0, 0, 0, 0) # leaf.image.fill(transparent)
 
 def draw_window(knifeInfo):
     blueBackground=(255, 255, 255) # red, green, blue tuple
@@ -26,10 +33,15 @@ def draw_window(knifeInfo):
     win.blit(board, (300, 110))
     win.blit(carrot, (300, 110))
     win.blit(knife, (knifeInfo.x, knifeInfo.y))
+    #pygame.draw.circle(win, (255, 255, 255), (300, 110, 4)
     if knifeInfo.x > 300 and knifeInfo.y >110 and knifeInfo.x < (300+300) and knifeInfo.y < (110+220):
         #print('You Win')
-        msg= myfont.render('You are at the cutting board', False, (0,0,0))
-        
+        msg= myfont.render('You are chopping', False, (0,0,0))
+       # carrot = pygame.image.load('carrot_cut2.png')
+        '''win.blit(carrot_1, (300, 110))
+        carrot.fill(transparent)
+        knife.fill(transparent)
+        win.blit(knife2, (knifeInfo.x, knifeInfo.y))'''
     else:
         msg= myfont.render('Chop (w,a,s,d)', False, (0,0,0))
     win.blit(msg, (200,50))
