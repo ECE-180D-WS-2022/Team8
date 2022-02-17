@@ -4,13 +4,19 @@ import time as t
 import paho.mqtt.client as mqtt
 import threading
 import ctypes
-##CONST GLOBALS
+import speech_recognition as sr
 
 GOAL_STOVE = 1
 GOAL_CUTTING = 1
 MESSAGE = 10
 IDEAL_SPIN = 1
 IDEAL_CUT = 1
+FLAG_SCORE = 7
+FLAG_START = 1
+FLAG_CUTTING = 2
+FLAG_STOVE = 3
+FLAG_POUR = 4
+FLAG_FLIP = 5
 
 #BOARD POSITIONS
 CUTTING = 1
@@ -33,7 +39,6 @@ total_cutting = 0
 flag_player = 0
 flag_opponent = 0
 flag_received = 0
-flag_score = 3
 score = 0
 message_received = ''
 
@@ -88,26 +93,35 @@ def on_connect(client, userdata, flags, rc):
             flag_player = 2
             flag_opponent = 1
     client.subscribe(str(player)+'Team8', qos=1)
+    #subscribing to mqtt to receive IMU data
+    #messages must only be received once hence qos is 2
+    client.subscribe(str(player)+'Team8SUB',qos=2)
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
         print('Unexpected Disconnect')
     else:
         print('Expected Disconnect')
-
 def on_message(client, userdata, message):
     global flag_received
     global in_cooking
     global score
     global message_received
-
+    global spins
+    global chops
+    
     temporary = str(message.payload)
     message_received = temporary[3:-2]
     flag_received = temporary[2]
     #score flag received
-    if str(flag_received) == '3':
+    if (str(flag_received) == str(FLAG_STOVE)):
+        spin_add = int(message_received)
+        spins = score+spin_add
+    elif (str(flag_received) == str(FLAG_CUTTING)):
+        cut_add = int(message_received)
+        chops = score+cut_add
+    elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
-            client.publish(str(flag_opponent)+'Team8', float(score), qos=1)
             if 1000-float(score) > 1000-float(message_received):
                 print('You are better than the other idiot sandwich. Congration.')
                 print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
@@ -218,7 +232,6 @@ def on_press(key):
 #GAME STARTS HERE
 #GAME STARTS HERE
 #
-
 client = mqtt.Client()
 # add additional client options (security, certifications, etc.)
 # many default options should be good to start off.
@@ -229,6 +242,7 @@ client.on_message = on_message
 # 2. connect to a broker using one of the connect*() functions.
 client.connect_async("test.mosquitto.org")
 client.loop_start()
+##CONST GLOBALS
 def main():
     global score
     global in_cooking
@@ -240,16 +254,37 @@ def main():
     while(flag_player==0):
         pass
     t.sleep(1)
-    client.publish(str(flag_opponent)+'Team8','1gamestart',qos=1)
+    client.publish(str(flag_opponent)+'Team8',str(FLAG_START)+'gamestart',qos=1)
     print('Welcome to Cooking Papa! Waiting for your opponent to enter the lobby')
     #publish again in case of second to enter lobby
+    flag_received = input('Testing. Type your opponent:')
     while(flag_received==0):
         pass
-    client.publish(str(flag_opponent)+'Team8','1gamestart',qos=1)
+    client.publish(str(flag_opponent)+'Team8', str(FLAG_START)+'gamestart',qos=1)
     t.sleep(2)
-    txt = input('Type Ready to begin: \n')
+    r = sr.Recognizer()
+    print("Say Ready to begin")
+    with sr.Microphone(device_index=1) as source:
+        audio = r.listen(source,phrase_time_limit = 2)
+    try:
+        txt = r.recognize_google(audio)
+        txt = str(txt)
+        print("You said " + txt)
+    except sr.UnknownValueError:
+        print("Google Speech Recognition could not understand audio")
+    except sr.RequestError as e:
+        print("Could not request results from Google Speech Recognition service; {0}".format(e))
     while txt.lower() != 'ready':
-        txt = input('Type Ready to begin: \n')
+        with sr.Microphone(device_index=1) as source:
+            audio = r.listen(source,phrase_time_limit = 2)
+        try:
+            txt = r.recognize_google(audio)
+            txt = str(txt)
+            print("You said " + txt)
+        except sr.UnknownValueError:
+            print("Google Speech Recognition could not understand audio")
+        except sr.RequestError as e:
+            print("Could not request results from Google Speech Recognition service; {0}".format(e))
     print("Let's Begin, Timer starts in...")
     print("3")
     t.sleep(1)
@@ -265,10 +300,13 @@ def main():
             listener.join()
         in_cooking = 1
         if position == STOVE:
+            #ask IMU for stove classifier data
             txt = input('Type spoon to start stirring: \n')
             if txt == 'spoon':
                 t2 = thread_with_exception('timer')
                 t2.start()
+                client.publish(str(flag_player)+'Team8PUB', str(FLAG_STOVE), qos=1)
+                client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
                 print('Press up right down left chef')
                 while(spins<4):
                     with keyboard.Listener(on_press=on_press)as listener:
@@ -279,10 +317,13 @@ def main():
                 t2.raise_exception()
                 t2.join()
         elif position == CUTTING:
+            #ask IMU for cutting classifier data
             txt = input('Type knife to start chopping: \n')
             if txt == 'knife':
                 t2 = thread_with_exception('timer')
                 t2.start()
+                client.publish(str(flag_player)+'Team8PUB', str(FLAG_CUTTING), qos=1)
+                client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
                 print('Press up and down chef')
                 while(chops<6):
                     with keyboard.Listener(on_press=on_press)as listener:
@@ -299,7 +340,7 @@ def main():
     end_game = t.time()
     score = end_game-start_game
     print('Your time was: ' + str(score))
-    client.publish(str(flag_opponent)+'Team8', str(flag_score)+str(score), qos=1)
+    client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
     print("waiting for opponent's time...")
     while True:
         pass
