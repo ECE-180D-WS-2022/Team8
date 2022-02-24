@@ -28,7 +28,7 @@ bg_img = pygame.image.load('img/background.png')
 bg_img = pygame.transform.scale(bg_img, (1200, 900))
 bg_chopping = pygame.image.load('img/chopping.png')
 bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
-bg_stove = pygame.image.load('stir/background.png')
+bg_stove = pygame.image.load('stir/background2.png')
 
 speed = 2
 
@@ -86,6 +86,9 @@ s20 =pygame.image.load('stir\s20.png')
 s21 =pygame.image.load('stir\s21.png')
 s22 =pygame.image.load('stir\s22.png')
 s23 =pygame.image.load('stir\s23.png')
+fire =pygame.image.load('stir/fire.png')
+
+
 
 transparent = (0, 0, 0, 0) 
 '''player class, use this to move the player'''
@@ -96,7 +99,7 @@ class Player():
 		self.index = 0
 		self.counter = 0
 		for num in range(1, 5):
-			img_right = pygame.image.load(f'img/guy{num}.png')
+			img_right = pygame.image.load(f'img/chef{num}.png')
 			img_right = pygame.transform.scale(img_right, (300, 600))
 			img_left = pygame.transform.flip(img_right, True, False)
 			self.images_right.append(img_right)
@@ -205,7 +208,8 @@ def stir():
         print(var_name)
         screen.fill(backgroundColor)
         screen.blit(bg_stove, (0, 0))
-        screen.blit(globals()[var_name], (350, 260))
+        screen.blit(globals()[var_name], (340, 220))
+        screen.blit(fire, (440, 340))
         pygame.display.update()
 
 def chop():
@@ -358,7 +362,9 @@ while run:
 		screen.blit(bg_stove, (0, 0))
 		msg= myfont.render('Press \'s\' to start', False, (0,0,0))
 		screen.blit(msg, (200,50))
-		screen.blit(s1, (350, 260))
+		screen.blit(s1, (340, 220))
+		#screen.blit(fire, (440, 340))
+        #x then y
 		pygame.display.update()
 		run= True
 		'''while run:
