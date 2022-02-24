@@ -6,17 +6,21 @@ import threading
 import ctypes
 import speech_recognition as sr
 
-GOAL_STOVE = 1
-GOAL_CUTTING = 1
-MESSAGE = 10
+GOAL_STOVE = 60
+GOAL_CUTTING = 60
 IDEAL_SPIN = 1
 IDEAL_CUT = 1
-FLAG_SCORE = 7
-FLAG_START = 1
-FLAG_CUTTING = 2
-FLAG_STOVE = 3
-FLAG_POUR = 4
-FLAG_FLIP = 5
+FLAG_START = '01'
+FLAG_CUTTING = '02'
+FLAG_STOVE = '03'
+FLAG_POUR = '04'
+FLAG_FLIP = '05'
+STOP = '00'
+
+
+MESSAGE = '10'
+
+FLAG_SCORE = '99'
 
 #BOARD POSITIONS
 CUTTING = 1
@@ -28,8 +32,6 @@ STOVE = -1
 #globals
 position = 0
 in_cooking = 0
-spins = 0
-chops = 0
 key_prev = keyboard.Key.up
 start = t.time()
 end = t.time()
@@ -41,40 +43,50 @@ flag_opponent = 0
 flag_received = 0
 score = 0
 message_received = ''
-
+speed = 1
+prev_pos = 1
 #globals
 
-class thread_with_exception(threading.Thread):
-    def __init__(self, name):
-        threading.Thread.__init__(self)
-        self.name = name
+# class thread_with_exception(threading.Thread):
+#     def __init__(self, name):
+#         threading.Thread.__init__(self)
+#         self.name = name
              
-    def run(self):
+#     def run(self):
+#         global speed
  
-        # target function of the thread class
-        try:
-            i = 0
-            while(True):
-                i = i+1
-                t.sleep(1)
-                print("                           "+str(i), end="\r")
-        finally:
-            print('ended')
+#         # target function of the thread class
+#         try:
+#             speed = 1
+#             i = 0
+#             while(GOAL_STOVE>i):
+#                 i = i+speed
+#                 t.sleep(1)
+#                 print("                           "+str(i), end="\r")
+#         finally:
+#             print('ended')
           
-    def get_id(self):
+#     def get_id(self):
  
-        # returns id of the respective thread
-        if hasattr(self, '_thread_id'):
-            return self._thread_id
-        for id, thread in threading._active.items():
-            if thread is self:
-                return id
+#         # returns id of the respective thread
+#         if hasattr(self, '_thread_id'):
+#             return self._thread_id
+#         for id, thread in threading._active.items():
+#             if thread is self:
+#                 return id
   
-    def raise_exception(self):
-        thread_id = self.get_id()
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
-              ctypes.py_object(SystemExit))
+#     def raise_exception(self):
+#         thread_id = self.get_id()
+#         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+#               ctypes.py_object(SystemExit))
 #mqtt interaction
+def task(time):
+    global speed
+    speed, i = 0, 0
+    while (time > i):
+        i = i + speed
+        t.sleep(1)
+    return
 def on_connect(client, userdata, flags, rc):
     global flag_player
     global flag_opponent
@@ -84,18 +96,30 @@ def on_connect(client, userdata, flags, rc):
 # reconnect then subscriptions will be renewed.
 # client.subscribe("ece180d/test")
 # The callback of the client when it disconnects.
+    txt = '0'
     while(flag_player == 0):
-        player = input("which player are you playing as, 1 or 2?")
-        if str(player) == '1':
+        r = sr.Recognizer()
+        print("Which player are you playing as, 1 or 2?")
+        with sr.Microphone(device_index=1) as source:
+            audio = r.listen(source,phrase_time_limit = 2)
+        try:
+            txt = r.recognize_google(audio)
+            txt = str(txt)
+            print("You said " + txt)
+        except sr.UnknownValueError:
+            print("Google Speech Recognition could not understand audio")
+        except sr.RequestError as e:
+            print("Could not request results from Google Speech Recognition service; {0}".format(e))
+        if txt.lower() == 'one' or txt.lower() == 'won' or txt.lower() == '1':
             flag_player = 1
             flag_opponent = 2
-        elif str(player) == '2':
+        elif txt.lower() == 'two' or txt.lower() == 'to' or txt.lower() == 'too' or txt.lower() == '2':
             flag_player = 2
             flag_opponent = 1
-    client.subscribe(str(player)+'Team8', qos=1)
+    client.subscribe(str(flag_player)+'Team8', qos=1)
     #subscribing to mqtt to receive IMU data
     #messages must only be received once hence qos is 2
-    client.subscribe(str(player)+'Team8SUB',qos=2)
+    client.subscribe(str(flag_player)+'Team8A',qos=2)
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
@@ -105,21 +129,19 @@ def on_disconnect(client, userdata, rc):
 def on_message(client, userdata, message):
     global flag_received
     global in_cooking
-    global score
+    global speed
     global message_received
     global spins
     global chops
     
     temporary = str(message.payload)
-    message_received = temporary[3:-2]
-    flag_received = temporary[2]
+    message_received = temporary[4:-2]
+    flag_received = temporary[2:3]
     #score flag received
-    if (str(flag_received) == str(FLAG_STOVE)):
-        spin_add = int(message_received)
-        spins = score+spin_add
-    elif (str(flag_received) == str(FLAG_CUTTING)):
-        cut_add = int(message_received)
-        chops = score+cut_add
+    if (str(flag_received) == str(FLAG_STOVE) and position == STOVE):
+        speed = int(message_received)
+    elif (str(flag_received) == str(FLAG_CUTTING) and position == CUTTING):
+        speed = int(message_received)
     elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
             if 1000-float(score) > 1000-float(message_received):
@@ -142,14 +164,17 @@ def on_press(key):
     global start
     global end
     global diff
+    global prev_pos
     
     #choose which board
     if in_cooking == 0:
-        if key == keyboard.Key.left:
+        if key == keyboard.Key.left and prev_pos == CUTTING:
             position = STOVE
+            prev_pos = STOVE
             return False
-        elif key == keyboard.Key.right:
+        elif key == keyboard.Key.right and prev_pos == STOVE:
             position = CUTTING
+            prev_pos = CUTTING
             return False
         else:
             position = 0
@@ -246,34 +271,37 @@ client.loop_start()
 def main():
     global score
     global in_cooking
-    global spins
-    global chops
-    global total_cutting
-    global total_stove
+    global prev_pos
     #wait for player selection
     while(flag_player==0):
         pass
     t.sleep(1)
-    client.publish(str(flag_opponent)+'Team8',str(FLAG_START)+'gamestart',qos=1)
-    print('Welcome to Cooking Papa! Waiting for your opponent to enter the lobby')
+    print('Welcome to Cooking Papa!')
     #publish again in case of second to enter lobby
-    flag_received = input('Testing. Type your opponent:')
+    r = sr.Recognizer()
+    print('Say Practice to practice and Fight to play against an opponent')
+    txt = '0'
+    while txt.lower() != 'practice' or txt.lower() != 'fight':
+        with sr.Microphone(device_index=1) as source:
+            audio = r.listen(source,phrase_time_limit = 2)
+        try:
+            txt = r.recognize_google(audio)
+            txt = str(txt)
+            print("You said " + txt)
+        except sr.UnknownValueError:
+            print("Google Speech Recognition could not understand audio")
+    if txt.lower() == 'practice':
+        flag_received = 99
+    elif txt.lower() == 'fight':
+        flag_received = 0
+        client.publish(str(flag_opponent)+'Team8',str(FLAG_START)+'gamestart',qos=1)
     while(flag_received==0):
         pass
     client.publish(str(flag_opponent)+'Team8', str(FLAG_START)+'gamestart',qos=1)
     t.sleep(2)
     r = sr.Recognizer()
+    txt = '0'
     print("Say Ready to begin")
-    with sr.Microphone(device_index=1) as source:
-        audio = r.listen(source,phrase_time_limit = 2)
-    try:
-        txt = r.recognize_google(audio)
-        txt = str(txt)
-        print("You said " + txt)
-    except sr.UnknownValueError:
-        print("Google Speech Recognition could not understand audio")
-    except sr.RequestError as e:
-        print("Could not request results from Google Speech Recognition service; {0}".format(e))
     while txt.lower() != 'ready':
         with sr.Microphone(device_index=1) as source:
             audio = r.listen(source,phrase_time_limit = 2)
@@ -283,8 +311,6 @@ def main():
             print("You said " + txt)
         except sr.UnknownValueError:
             print("Google Speech Recognition could not understand audio")
-        except sr.RequestError as e:
-            print("Could not request results from Google Speech Recognition service; {0}".format(e))
     print("Let's Begin, Timer starts in...")
     print("3")
     t.sleep(1)
@@ -296,43 +322,46 @@ def main():
     start_game = t.time()    
     while(in_cooking != 2):
         print('Press left to go to stove, Press right to go to chopping board')
+        print('You must first spin, then chop')
         with keyboard.Listener(on_press=on_press) as listener:
             listener.join()
         in_cooking = 1
         if position == STOVE:
             #ask IMU for stove classifier data
-            txt = input('Type spoon to start stirring: \n')
-            if txt == 'spoon':
-                t2 = thread_with_exception('timer')
-                t2.start()
-                client.publish(str(flag_player)+'Team8PUB', str(FLAG_STOVE), qos=1)
-                client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
-                print('Press up right down left chef')
-                while(spins<4):
-                    with keyboard.Listener(on_press=on_press)as listener:
-                        listener.join()
-                spins = 0
-                total_stove = total_stove + 1
-                print("Total stove times remaining: "+ str(GOAL_STOVE-total_stove))
-                t2.raise_exception()
-                t2.join()
+            r = sr.Recognizer()
+            print("Say spoon to start stirring")
+            txt = '0'
+            while txt.lower() != 'spoon':
+                with sr.Microphone(device_index=1) as source:
+                    audio = r.listen(source,phrase_time_limit = 2)
+                try:
+                    txt = r.recognize_google(audio)
+                    txt = str(txt)
+                    print("You said " + txt)
+                except sr.UnknownValueError:
+                    print("Google Speech Recognition could not understand audio")
+            client.publish(str(flag_player)+'Team8B', str(FLAG_STOVE), qos=1)
+            client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
+            task(GOAL_STOVE)
+            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
         elif position == CUTTING:
             #ask IMU for cutting classifier data
-            txt = input('Type knife to start chopping: \n')
-            if txt == 'knife':
-                t2 = thread_with_exception('timer')
-                t2.start()
-                client.publish(str(flag_player)+'Team8PUB', str(FLAG_CUTTING), qos=1)
-                client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
-                print('Press up and down chef')
-                while(chops<6):
-                    with keyboard.Listener(on_press=on_press)as listener:
-                        listener.join()
-                chops = 0
-                total_cutting = total_cutting + 1
-                print("Total cutting times remaining: "+ str(GOAL_CUTTING-total_cutting))
-                t2.raise_exception()
-                t2.join()
+            r = sr.Recognizer()
+            print("Say knife to start stirring")
+            txt = '0'
+            while txt.lower() != 'knife':
+                with sr.Microphone(device_index=1) as source:
+                    audio = r.listen(source,phrase_time_limit = 2)
+                try:
+                    txt = r.recognize_google(audio)
+                    txt = str(txt)
+                    print("You said " + txt)
+                except sr.UnknownValueError:
+                    print("Google Speech Recognition could not understand audio")
+            client.publish(str(flag_player)+'Team8B', str(FLAG_CUTTING), qos=1)
+            client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
+            task(GOAL_CUTTING)
+            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
         in_cooking = 0
         if total_cutting >= GOAL_CUTTING and total_stove >= GOAL_STOVE:
             in_cooking = 2
