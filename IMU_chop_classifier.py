@@ -21,9 +21,10 @@ GYRO_ZOUT_H  = 0x47
 Gy_arr = []
 Gz_arr = []
 
+CHOP_SENSITIVITY_SCALING = 0.05
 CHOP_THRESH = 2
-GOOD_CHOP_THRESH = 4
-DECENT_CHOP_THRESH = 8
+GOOD_CHOP_THRESH = 2
+DECENT_CHOP_THRESH = 4
 
 for i in range(20):
 	Gz_arr.append(i)
@@ -115,15 +116,27 @@ while True:
 	#if (counter == 20):
 		#max_Gz = max(Gz_arr)
 		#max_Gy = max(Gy_arr)
-	if abs(Ax) > abs(Ay) and abs(Ax) > abs(Az):	#Correct side pointing down
-		print('correct side down')
+	if ((abs(Ax) > abs(Ay)-CHOP_SENSITIVITY_SCALING and abs(Ax) > abs(Az)-CHOP_SENSITIVITY_SCALING) or (abs(Ax) <= abs(Ay)+CHOP_SENSITIVITY_SCALING and abs(Ax) <= abs(Az)+CHOP_SENSITIVITY_SCALING and abs(Gz) > 3)):	#Correct side pointing down
+		#print('correct side down')
 		if abs(Gz) > (abs(Gx)+CHOP_THRESH) and abs(Gz) > (abs(Gy)+CHOP_THRESH):	#chopping motion (up and down) detected
 			if abs(Gx) < GOOD_CHOP_THRESH and abs(Gy) < GOOD_CHOP_THRESH:
-				print('good chopping')
+				#print('good chopping')
+				print('3')
 			elif abs(Gx) < DECENT_CHOP_THRESH and abs(Gy) < DECENT_CHOP_THRESH:
-				print('decent chopping')
-			else:
-				print ('meh chopping')
+				#print('decent chopping')
+				print('2')
+		else:	
+			#print ('meh chopping')
+			print('1')
+		
+		'''
+		elif abs(Gx) > abs(Gz) and abs(Gx) > abs(Gy):
+			print('straighten your cut')
+		elif abs(Gy) > abs(Gz) and abs(Gy) > abs(Gx):
+			print("don't angle your blade")
+		else:
+			print('L')
+		'''
 	else:
 		print('idle')	#for chopping classifier, nothing else matters
 		'''
@@ -137,4 +150,4 @@ while True:
 		'''
 		#counter = 0
 		
-	sleep(0.1)
+	sleep(0.01)

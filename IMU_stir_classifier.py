@@ -23,8 +23,8 @@ Gz_arr = []
 
 G_THRESH = 1
 COUNTER_THRESH = 15
-TOP_SPEED_THRESH = 9
-BOT_SPEED_THRESH = 3
+TOP_SPEED_THRESH = 10
+BOT_SPEED_THRESH = 2
 
 
 for i in range(COUNTER_THRESH):
@@ -107,11 +107,12 @@ while True:
 		if abs(Ay) > (0.75*G_THRESH) and abs(Ay) < (1.25*G_THRESH):	#pointing in the right direction within a certain threshold
 			#print('pointing down')
 			if (max_Gx - min_Gx) < TOP_SPEED_THRESH and (max_Gx - min_Gx) > BOT_SPEED_THRESH and (max_Gz - min_Gz) < TOP_SPEED_THRESH and (max_Gz - min_Gz) > BOT_SPEED_THRESH:	#good speed threshold, must maintain to score
-				print('Good speed')
+				#print('Good speed')
+				print('3')
 			elif (max_Gx - min_Gx) >= TOP_SPEED_THRESH or (max_Gz - min_Gz) >= TOP_SPEED_THRESH:	#tell player to slow down
-				print('slow down')
+				print('slow down: 1')
 			elif (max_Gx - min_Gx) <= BOT_SPEED_THRESH or (max_Gz - min_Gz) <= BOT_SPEED_THRESH:	#tell player to speed up
-				print('speed up')
+				print('speed up: 1')
 			'''
 			elif (max_Gx - min_Gx) < 10 and (max_Gx - min_Gx) > 2 and (max_Gz - min_Gz) < 10 and (max_Gz - min_Gz) > 2:
 				print('Decent speed')
@@ -119,6 +120,6 @@ while True:
 				print('Meh speed')
 			'''
 		else:
-			print('not')
+			print('not: 0')
 		counter = 0
 	#sleep(0.03)
