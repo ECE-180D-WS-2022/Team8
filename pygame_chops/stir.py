@@ -26,6 +26,15 @@ s12 =pygame.image.load('stir\s12.png')
 s13 =pygame.image.load('stir\s13.png')
 s14 =pygame.image.load('stir\s14.png')
 s15 =pygame.image.load('stir\s15.png')
+s16 =pygame.image.load('stir\s16.png')
+s17 =pygame.image.load('stir\s17.png')
+s18 =pygame.image.load('stir\s18.png')
+s19 =pygame.image.load('stir\s19.png')
+s20 =pygame.image.load('stir\s20.png')
+s21 =pygame.image.load('stir\s21.png')
+s22 =pygame.image.load('stir\s22.png')
+s23 =pygame.image.load('stir\s23.png')
+
 
 pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 40)
@@ -40,17 +49,17 @@ def draw_window():
     pygame.display.update() #update the display
 
     global speed
-    for i in range(1,75):
+    for i in range(1,115):
         k=i
        # print('it:'+str(it))
-        if (i>=16):
-            k=i-15
-        if (i>=31):
-            k=i-30
-        if (i>=46):
-            k=i-45
-        if (i>=61):
-            k=i-60
+        if (i>=24):
+            k=i-23
+        if (i>=47):
+            k=i-46
+        if (i>=70):
+            k=i-69
+        if (i>=93):
+            k=i-92
         
         '''keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_1]: #s to start
@@ -65,7 +74,7 @@ def draw_window():
         elif speed==2:
             time.sleep(0.1)
         else:
-            time.sleep(0.02)
+            time.sleep(0.01)
         var_name = "s"+str(k)
         win.fill(backgroundColor)
         win.blit(globals()[var_name], (300, 110))

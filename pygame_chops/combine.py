@@ -28,8 +28,7 @@ bg_img = pygame.image.load('img/background.png')
 bg_img = pygame.transform.scale(bg_img, (1200, 900))
 bg_chopping = pygame.image.load('img/chopping.png')
 bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
-bg_stove = pygame.image.load('img/stove.png')
-bg_stove = pygame.transform.scale(bg_stove, (1200, 900))
+bg_stove = pygame.image.load('stir/background.png')
 
 speed = 2
 
@@ -79,9 +78,17 @@ s12 =pygame.image.load('stir\s12.png')
 s13 =pygame.image.load('stir\s13.png')
 s14 =pygame.image.load('stir\s14.png')
 s15 =pygame.image.load('stir\s15.png')
-
+s16 =pygame.image.load('stir\s16.png')
+s17 =pygame.image.load('stir\s17.png')
+s18 =pygame.image.load('stir\s18.png')
+s19 =pygame.image.load('stir\s19.png')
+s20 =pygame.image.load('stir\s20.png')
+s21 =pygame.image.load('stir\s21.png')
+s22 =pygame.image.load('stir\s22.png')
+s23 =pygame.image.load('stir\s23.png')
 
 transparent = (0, 0, 0, 0) 
+'''player class, use this to move the player'''
 class Player():
 	def __init__(self, x, y):
 		self.images_right = []
@@ -178,35 +185,27 @@ def stir():
     pygame.display.update() #update the display
 
     global speed
-    for i in range(1,75):
+    for i in range(1,69):
         k=i
-       # print('it:'+str(it))
-        if (i>=16):
-            k=i-15
-        if (i>=31):
-            k=i-30
-        if (i>=46):
-            k=i-45
-        if (i>=61):
-            k=i-60
+        if (i>=24):
+            k=i-23
+        if (i>=47):
+            k=i-46
+
         
-        '''keys_pressed = pygame.key.get_pressed()
-        if keys_pressed[pygame.K_1]: #s to start
-            speed = 1
-        elif keys_pressed[pygame.K_2]: #s to start
-            speed = 2
-        elif keys_pressed[pygame.K_3]:
-            speed = 3'''
+
         
         if speed ==1:
             time.sleep(0.2)
         elif speed==2:
             time.sleep(0.1)
         else:
-            time.sleep(0.02)
+            time.sleep(0.01)
         var_name = "s"+str(k)
+        print(var_name)
         screen.fill(backgroundColor)
-        screen.blit(globals()[var_name], (300, 110))
+        screen.blit(bg_stove, (0, 0))
+        screen.blit(globals()[var_name], (350, 260))
         pygame.display.update()
 
 def chop():
@@ -353,13 +352,13 @@ while run:
 			chop() 
 
 	elif atStove == True:
-		screen.blit(bg_stove, (0, 0))
+		
 		blueBackground=(255, 255, 255) # red, green, blue tuple
 		screen.fill(blueBackground)
-    
+		screen.blit(bg_stove, (0, 0))
 		msg= myfont.render('Press \'s\' to start', False, (0,0,0))
 		screen.blit(msg, (200,50))
-		screen.blit(s1, (300, 110))
+		screen.blit(s1, (350, 260))
 		pygame.display.update()
 		run= True
 		'''while run:

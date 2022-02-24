@@ -1,3 +1,4 @@
+'''Use this to work on vision processing'''
 import pygame
 from pygame.locals import *
 
@@ -60,6 +61,7 @@ class Player():
 		walk_cooldown = 5
 
 		#get keypresses
+		#this moves the plauyer
 		key = pygame.key.get_pressed()
 		if key[pygame.K_SPACE] and self.jumped == False:
 			self.vel_y = -15
@@ -115,7 +117,7 @@ class Player():
 		screen.blit(self.image, self.rect)
 
 
-
+'''ignore the World Class'''
 
 class World():
 	def __init__(self, data):
@@ -176,6 +178,7 @@ world_data =[
 ]
 
 
+'''MAIN Program'''
 inWorld = True
 
 player = Player(100, screen_height - 130)
