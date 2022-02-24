@@ -6,8 +6,8 @@ pygame.init()
 clock = pygame.time.Clock()
 fps = 60
 
-screen_width = 1000
-screen_height = 1000
+screen_width = 1200
+screen_height = 900
 
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Cooking Papa 1.0')
@@ -21,8 +21,11 @@ atBoard = False
 #load images
 #sun_img = pygame.image.load('img/sun.png')
 bg_img = pygame.image.load('img/background.png')
+bg_img = pygame.transform.scale(bg_img, (1200, 900))
 bg_chopping = pygame.image.load('img/chopping.png')
+bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
 bg_stove = pygame.image.load('img/stove.png')
+bg_stove = pygame.transform.scale(bg_stove, (1200, 900))
 
 class Player():
 	def __init__(self, x, y):
