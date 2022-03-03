@@ -1,8 +1,17 @@
 import pygame
 import time
-import threading
+
 import cv2
-#define size of window
+
+
+import threading as th
+
+import keyboard
+
+speed=1
+keep_going = True
+
+
 windowSize=(1200,900)
 
 win=pygame.display.set_mode(windowSize)
@@ -50,38 +59,47 @@ clock = pygame.time.Clock()
 
 def draw_window():
     global speed
-    it = 0
     input_speed=0
     for i in range(2,28):
-        clock.tick(2*speed)
-        input_speed = cv2.waitKey(1) & 0xFF
-        if input_speed ==ord('1'):
-            print(1)
-        if input_speed==ord('2'):
-            print(2)
-        '''print('it:'+str(it))
-        if (it==4):
-            input_speed = input("speed: ")
-            speed = int(input_speed)
-            it=0
-        keys_pressed = pygame.key.get_pressed()
-        if keys_pressed[pygame.K_1]: #s to start
-            speed = 1
-        elif keys_pressed[pygame.K_2]: #s to start
-            speed = 2
-        elif keys_pressed[pygame.K_3]:
-            speed = 3'''
-            
-        
+        clock.tick(2*speed)        
         win.blit(board, (300, 110))
         var_name2 = "c"+str(i)
         #print(var_name2)
         win.blit(globals()[var_name2], (300, 110))
         pygame.display.update()
-        it+=1
+
 
     
 
+
+def key_capture_thread():
+    global speed
+    global keep_going
+    a = keyboard.read_key()
+    if a== "1":
+        speed=1
+    if a== "2":
+        speed=4
+    if a== "3":
+        speed=10
+    th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
+
+
+
+def do_stuff():
+    th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
+    i=0
+    global speed
+        
+    for i in range(2,28):
+        clock.tick(2*speed)        
+        win.blit(board, (300, 110))
+        var_name2 = "c"+str(i)
+        #print(var_name2)
+        win.blit(globals()[var_name2], (300, 110))
+        pygame.display.update()
+        
+    print ("exit")
 
 
 def main():
@@ -107,13 +125,17 @@ def main():
                 print('User quit game')
                 run=False
         keys_pressed = pygame.key.get_pressed()
+
+        
         if keys_pressed[pygame.K_s]: #s to start
-            draw_window()  
+            do_stuff()
 
 
                   
                 
     pygame.quit()
+
+
 
 main()
     

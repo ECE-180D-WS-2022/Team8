@@ -11,14 +11,14 @@ pygame.display.set_caption("Pouring")
 speed = 3
 
 #look in same folder as script for images
-p1 =pygame.image.load('pour\p_8.png')
-p2 =pygame.image.load('pour\p_7.png')
-p3 =pygame.image.load('pour\p_6.png')
-p4 =pygame.image.load('pour\p_5.png')
-p5 =pygame.image.load('pour\p_4.png')
-p6 =pygame.image.load('pour\p_3.png')
-p7 =pygame.image.load('pour\p_2.png')
-p8 =pygame.image.load('pour\p_1.png')
+p1 =pygame.image.load('pour\p1.png')
+p2 =pygame.image.load('pour\p2.png')
+p3 =pygame.image.load('pour\p3.png')
+p4 =pygame.image.load('pour\p4.png')
+p5 =pygame.image.load('pour\p5.png')
+p6 =pygame.image.load('pour\p6.png')
+p7 =pygame.image.load('pour\p7.png')
+p8 =pygame.image.load('pour\p8.png')
 
 
 
