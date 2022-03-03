@@ -1,3 +1,7 @@
+'''
+In this program, press 's' to begin and '1' '2' or '3' to adjust the speed of the cutting motion. Keep in mind that this version
+is a lot faster for demonstration purposes but will be a lot slower in the game so we can have the user cutting for ~30 seconds'''
+
 import pygame
 import time
 
