@@ -1,3 +1,4 @@
+'''Use this to work on vision processing'''
 import pygame
 from pygame.locals import *
 
@@ -6,8 +7,8 @@ pygame.init()
 clock = pygame.time.Clock()
 fps = 60
 
-screen_width = 1000
-screen_height = 1000
+screen_width = 1200
+screen_height = 900
 
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Cooking Papa 1.0')
@@ -21,8 +22,11 @@ atBoard = False
 #load images
 #sun_img = pygame.image.load('img/sun.png')
 bg_img = pygame.image.load('img/background.png')
+bg_img = pygame.transform.scale(bg_img, (1200, 900))
 bg_chopping = pygame.image.load('img/chopping.png')
+bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
 bg_stove = pygame.image.load('img/stove.png')
+bg_stove = pygame.transform.scale(bg_stove, (1200, 900))
 
 class Player():
 	def __init__(self, x, y):
@@ -31,7 +35,7 @@ class Player():
 		self.index = 0
 		self.counter = 0
 		for num in range(1, 5):
-			img_right = pygame.image.load(f'img/guy{num}.png')
+			img_right = pygame.image.load(f'img/chef{num}.png')
 			img_right = pygame.transform.scale(img_right, (300, 600))
 			img_left = pygame.transform.flip(img_right, True, False)
 			self.images_right.append(img_right)
@@ -57,6 +61,7 @@ class Player():
 		walk_cooldown = 5
 
 		#get keypresses
+		#this moves the plauyer
 		key = pygame.key.get_pressed()
 		if key[pygame.K_SPACE] and self.jumped == False:
 			self.vel_y = -15
@@ -112,7 +117,7 @@ class Player():
 		screen.blit(self.image, self.rect)
 
 
-
+'''ignore the World Class'''
 
 class World():
 	def __init__(self, data):
@@ -173,6 +178,7 @@ world_data =[
 ]
 
 
+'''MAIN Program'''
 inWorld = True
 
 player = Player(100, screen_height - 130)
