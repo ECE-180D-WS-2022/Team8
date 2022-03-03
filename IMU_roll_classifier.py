@@ -24,14 +24,16 @@ Gx_arr = []
 Az_arr = []
 Ay_arr = []
 Ax_arr = []
-COUNTER_THRESH = 15
+ROLL_COUNTER_THRESH = 40	#more values taken because want to slow down movement of rolling
 
-CHOP_SENSITIVITY_SCALING = 0
-CHOP_THRESH = 0
-GOOD_CHOP_THRESH = 2
-DECENT_CHOP_THRESH = 4
+ROLL_SENSITIVITY_SCALING = 0
+AY_ROLL_THRESH = 0.4		#avg_Ay must be smaller than this value
+AZ_ROLL_THRESH_BOT = 0.2	#max - min Az must be larger than this value to register
+AZ_ROLL_THRESH_TOP = 0.7	#max - min Az must be smaller than this value to register
+GOOD_ROLL_THRESH = 1
+DECENT_ROLL_THRESH = 4
 
-for i in range(COUNTER_THRESH):
+for i in range(ROLL_COUNTER_THRESH):
 	Gz_arr.append(i)
 	Gy_arr.append(i)
 	Gx_arr.append(i)
@@ -126,8 +128,7 @@ while True:
 	Ax_arr[counter] = Ax
 	counter+=1
 	
-	if (counter == COUNTER_THRESH):
-		'''
+	if (counter == ROLL_COUNTER_THRESH):
 		max_Gz = max(Gz_arr)
 		max_Gy = max(Gy_arr)
 		max_Gx = max(Gx_arr)
@@ -141,7 +142,7 @@ while True:
 		min_Az = min(Az_arr)
 		min_Ay = min(Ay_arr)
 		min_Ax = min(Ax_arr)
-		'''
+
 		avg_Gx = sum(Gx_arr) / len(Gx_arr)
 		avg_Gy = sum(Gy_arr) / len(Gy_arr)
 		avg_Gz = sum(Gz_arr) / len(Gz_arr)
@@ -151,8 +152,19 @@ while True:
 		avg_Az = sum(Az_arr) / len(Az_arr)
 
 		#Correct side currently pointing down
-		if ((abs(Ax) > abs(Ay)-CHOP_SENSITIVITY_SCALING and abs(Ax) > abs(Az)-CHOP_SENSITIVITY_SCALING) or (abs(Ax) <= abs(Ay)+CHOP_SENSITIVITY_SCALING and abs(Ax) <= abs(Az)+CHOP_SENSITIVITY_SCALING and abs(Gz) > 3)):	
+		if ((abs(Ax) > abs(Ay)-ROLL_SENSITIVITY_SCALING and abs(Ax) > abs(Az)-ROLL_SENSITIVITY_SCALING) or (abs(Ax) <= abs(Ay)+ROLL_SENSITIVITY_SCALING and abs(Ax) <= abs(Az)+ROLL_SENSITIVITY_SCALING and abs(Gz) > 3)):
 			#print('correct side down')
+			if (max_Az - min_Az) > AZ_ROLL_THRESH_BOT and (max_Az - min_Az) < AZ_ROLL_THRESH_TOP and avg_Ay < AY_ROLL_THRESH:
+				#print('rolling')
+				if avg_Gx < GOOD_ROLL_THRESH and avg_Gy < GOOD_ROLL_THRESH and avg_Gz < GOOD_ROLL_THRESH:
+					print('3')
+				elif avg_Gx < DECENT_ROLL_THRESH and avg_Gy < DECENT_ROLL_THRESH and avg_Gz < DECENT_ROLL_THRESH:
+					print('2')
+			else:
+				print('1')
+		else:
+			print('idle')
+			'''
 			if abs(avg_Gz) > (abs(avg_Gx)+CHOP_THRESH) and abs(avg_Gz) > (abs(avg_Gy)+CHOP_THRESH):	#chopping motion (up and down) detected
 				#print('chop detected')
 				if abs(avg_Gx) < GOOD_CHOP_THRESH and abs(avg_Gy) < GOOD_CHOP_THRESH:
@@ -166,6 +178,8 @@ while True:
 				print('1')
 		else:
 			print('idle')
+			'''		
+		
 		''' next steps: give feedback to the player
 		elif abs(Gx) > abs(Gz) and abs(Gx) > abs(Gy):
 			print('straighten your cut')
