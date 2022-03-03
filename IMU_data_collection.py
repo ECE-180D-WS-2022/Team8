@@ -90,4 +90,4 @@ while True:
 			#print('lifting')
 	#else:
 		#print('still')
-	sleep(0.1)
+	#sleep(0.1)
