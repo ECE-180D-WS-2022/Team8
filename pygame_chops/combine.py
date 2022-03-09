@@ -242,6 +242,35 @@ def chop():
         pygame.display.update()
         it+=1
 
+def stir():
+	time.sleep(1)
+    pygame.display.update() #update the display
+    it = 0
+    global speed
+    speed=3
+    for i in range(2,28):
+       # print('it:'+str(it))
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_1]: #s to start
+            speed = 1
+        elif keys_pressed[pygame.K_2]: #s to start
+            speed = 2
+        elif keys_pressed[pygame.K_3]:
+            speed = 3
+        
+        if speed ==1:
+            time.sleep(2)
+        elif speed==2:
+            time.sleep(0.75)
+        else:
+            time.sleep(0.1)
+        screen.blit(board, (300, 110))
+        var_name1 = "c"+str(i-1)
+        var_name2 = "c"+str(i)
+        globals()[var_name1].fill(transparent)
+        screen.blit(globals()[var_name2], (300, 110))
+        pygame.display.update()
+        it+=1
 
 class World():
 	def __init__(self, data):

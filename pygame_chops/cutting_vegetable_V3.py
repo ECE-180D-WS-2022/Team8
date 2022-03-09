@@ -61,18 +61,6 @@ myfont = pygame.font.SysFont('Comic Sans MS', 40)
 transparent = (0, 0, 0, 0) # leaf.image.fill(transparent)
 clock = pygame.time.Clock()
 
-def draw_window():
-    global speed
-    input_speed=0
-    for i in range(2,28):
-        clock.tick(2*speed)        
-        win.blit(board, (300, 110))
-        var_name2 = "c"+str(i)
-        #print(var_name2)
-        win.blit(globals()[var_name2], (300, 110))
-        pygame.display.update()
-
-
     
 
 
