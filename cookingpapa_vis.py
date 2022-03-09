@@ -92,10 +92,10 @@ def get_calibration_frames(frame):
 			if counter == 575:
 				x_c_2 = x + (width//2)
 				y_c_2 = x + (height//2)
-				print(x_c_1)
-				print(x_c_2)
-				print(y_c_1)
-				print(y_c_2)
+				#print(x_c_1)
+				#print(x_c_2)
+				#print(y_c_1)
+				#print(y_c_2)
 				print('top right corner calibration complete')
 
 def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
@@ -311,7 +311,7 @@ while run:
 	if counter <= 600:
 		get_calibration_frames(frame)
 	elif counter == 601:
-		print('in pass statement')
+		#print('in pass statement')
 		pass
 	elif counter == 602:
 		print('calibrating...')
