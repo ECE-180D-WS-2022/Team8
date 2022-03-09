@@ -19,8 +19,6 @@ prev_y = 0
 lower_thresh_player = np.array([0, 0, 0])
 upper_thresh_player = np.array([0, 0, 0])
 counter = 0 
-notCal = True
-TrackPlayer = True
 
 def track_player(frame, lower_thresh_player, upper_thresh_player):
     global x_pos
