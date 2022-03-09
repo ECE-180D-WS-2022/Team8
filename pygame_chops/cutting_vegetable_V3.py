@@ -4,12 +4,7 @@ is a lot faster for demonstration purposes but will be a lot slower in the game 
 
 import pygame
 import time
-
-import cv2
-
-
 import threading as th
-
 import keyboard
 
 speed=1
