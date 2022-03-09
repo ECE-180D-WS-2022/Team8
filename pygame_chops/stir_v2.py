@@ -44,46 +44,6 @@ pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 40)
 
 
-def draw_window():
-
-    
-    #blit puts one image on another
-    
-    time.sleep(1)
-    pygame.display.update() #update the display
-
-    global speed
-    for i in range(1,115):
-        k=i
-       # print('it:'+str(it))
-        if (i>=24):
-            k=i-23
-        if (i>=47):
-            k=i-46
-        if (i>=70):
-            k=i-69
-        if (i>=93):
-            k=i-92
-        
-        '''keys_pressed = pygame.key.get_pressed()
-        if keys_pressed[pygame.K_1]: #s to start
-            speed = 1
-        elif keys_pressed[pygame.K_2]: #s to start
-            speed = 2
-        elif keys_pressed[pygame.K_3]:
-            speed = 3'''
-        
-        if speed ==1:
-            time.sleep(0.2)
-        elif speed==2:
-            time.sleep(0.1)
-        else:
-            time.sleep(0.01)
-        var_name = "s"+str(k)
-        win.fill(backgroundColor)
-        win.blit(globals()[var_name], (300, 110))
-        pygame.display.update()
-
 
 
 def key_capture_thread():
@@ -104,14 +64,7 @@ def do_stuff():
     th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
     i=0
     global speed
-        
-    '''for i in range(2,28):
-        clock.tick(2*speed)        
-        win.blit(board, (300, 110))
-        var_name2 = "c"+str(i)
-        #print(var_name2)
-        win.blit(globals()[var_name2], (300, 110))
-        pygame.display.update()'''
+
     for i in range(1,115):
         k=i
        # print('it:'+str(it))
