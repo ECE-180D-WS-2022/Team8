@@ -1,6 +1,8 @@
 import pygame
 import time
-import threading
+import threading as th
+
+import keyboard
 #define size of window
 windowSize=(1200,900)
 
@@ -9,6 +11,8 @@ backgroundColor=(255, 255, 255) # red, green, blue tuple
 #set title on window
 pygame.display.set_caption("Stirring") 
 speed = 3
+
+clock = pygame.time.Clock()
 
 #look in same folder as script for images
 s1 =pygame.image.load('stir\s1.png')
@@ -82,6 +86,53 @@ def draw_window():
 
 
 
+def key_capture_thread():
+    global speed
+    global keep_going
+    a = keyboard.read_key()
+    if a== "1":
+        speed=1
+    if a== "2":
+        speed=4
+    if a== "3":
+        speed=10
+    th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
+
+
+
+def do_stuff():
+    th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
+    i=0
+    global speed
+        
+    '''for i in range(2,28):
+        clock.tick(2*speed)        
+        win.blit(board, (300, 110))
+        var_name2 = "c"+str(i)
+        #print(var_name2)
+        win.blit(globals()[var_name2], (300, 110))
+        pygame.display.update()'''
+    for i in range(1,115):
+        k=i
+       # print('it:'+str(it))
+        if (i>=24):
+            k=i-23
+        if (i>=47):
+            k=i-46
+        if (i>=70):
+            k=i-69
+        if (i>=93):
+            k=i-92
+        
+        clock.tick(2*speed)  
+        var_name = "s"+str(k)
+        win.fill(backgroundColor)
+        win.blit(globals()[var_name], (300, 110))
+        pygame.display.update()
+        
+    print ("exit")
+
+
 
 def main():
 
@@ -101,7 +152,7 @@ def main():
     
         keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_s]: #s to start
-            draw_window()  
+            do_stuff()
                   
                 
     pygame.quit()
