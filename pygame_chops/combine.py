@@ -33,33 +33,33 @@ bg_stove = pygame.image.load('images/stir/background2.png')
 speed = 2
 
 #look in same folder as script for images
-c1 =pygame.image.load('images\choppingcarrot\c1.png')
-c2 =pygame.image.load('images\choppingcarrot\c2.png')
-c3 =pygame.image.load('images\choppingcarrot\c3.png')
-c4 =pygame.image.load('images\choppingcarrot\c4.png')
-c5 =pygame.image.load('images\choppingcarrot\c5.png')
-c6 =pygame.image.load('images\choppingcarrot\c6.png')
-c7 =pygame.image.load('images\choppingcarrot\c7.png')
-c8 =pygame.image.load('images\choppingcarrot\c8.png')
-c9 =pygame.image.load('images\choppingcarrot\c9.png')
-c10 =pygame.image.load('images\choppingcarrot\c10.png')
-c11 =pygame.image.load('images\choppingcarrot\c11.png')
-c12 =pygame.image.load('images\choppingcarrot\c12.png')
-c13 =pygame.image.load('images\choppingcarrot\c13.png')
-c14 =pygame.image.load('images\choppingcarrot\c14.png')
-c15 =pygame.image.load('images\choppingcarrot\c15.png')
-c16 =pygame.image.load('images\choppingcarrot\c16.png')
-c17 =pygame.image.load('images\choppingcarrot\c17.png')
-c18 =pygame.image.load('images\choppingcarrot\c18.png')
-c19 =pygame.image.load('images\choppingcarrot\c19.png')
-c20 =pygame.image.load('images\choppingcarrot\c20.png')
-c21 =pygame.image.load('images\choppingcarrot\c21.png')
-c22 =pygame.image.load('images\choppingcarrot\c22.png')
-c23 =pygame.image.load('images\choppingcarrot\c23.png')
-c24 =pygame.image.load('images\choppingcarrot\c24.png')
-c25 =pygame.image.load('images\choppingcarrot\c25.png')
-c26 =pygame.image.load('images\choppingcarrot\c26.png')
-c27 =pygame.image.load('images\choppingcarrot\c27.png')
+c1 =pygame.image.load('images\choppingcarrot\cc1.png')
+c2 =pygame.image.load('images\choppingcarrot\cc2.png')
+c3 =pygame.image.load('images\choppingcarrot\cc3.png')
+c4 =pygame.image.load('images\choppingcarrot\cc4.png')
+c5 =pygame.image.load('images\choppingcarrot\cc5.png')
+c6 =pygame.image.load('images\choppingcarrot\cc6.png')
+c7 =pygame.image.load('images\choppingcarrot\cc7.png')
+c8 =pygame.image.load('images\choppingcarrot\cc8.png')
+c9 =pygame.image.load('images\choppingcarrot\cc9.png')
+c10 =pygame.image.load('images\choppingcarrot\cc10.png')
+c11 =pygame.image.load('images\choppingcarrot\cc11.png')
+c12 =pygame.image.load('images\choppingcarrot\cc12.png')
+c13 =pygame.image.load('images\choppingcarrot\cc13.png')
+c14 =pygame.image.load('images\choppingcarrot\cc14.png')
+c15 =pygame.image.load('images\choppingcarrot\cc15.png')
+c16 =pygame.image.load('images\choppingcarrot\cc16.png')
+c17 =pygame.image.load('images\choppingcarrot\cc17.png')
+c18 =pygame.image.load('images\choppingcarrot\cc18.png')
+c19 =pygame.image.load('images\choppingcarrot\cc19.png')
+c20 =pygame.image.load('images\choppingcarrot\cc20.png')
+c21 =pygame.image.load('images\choppingcarrot\cc21.png')
+c22 =pygame.image.load('images\choppingcarrot\cc22.png')
+c23 =pygame.image.load('images\choppingcarrot\cc23.png')
+c24 =pygame.image.load('images\choppingcarrot\cc24.png')
+c25 =pygame.image.load('images\choppingcarrot\cc25.png')
+c26 =pygame.image.load('images\choppingcarrot\cc26.png')
+c27 =pygame.image.load('images\choppingcarrot\cc27.png')
 board=pygame.image.load('images\cuttingboard2.png')
 
 #stirring photos
@@ -87,6 +87,10 @@ s21 =pygame.image.load('images\stir\s21.png')
 s22 =pygame.image.load('images\stir\s22.png')
 s23 =pygame.image.load('images\stir\s23.png')
 fire =pygame.image.load('images/stir/fire.png')
+
+intro = pygame.image.load('images\CookingPapa_intro.png')
+recipes = pygame.image.load('images\CookingPapa_recipeS.png')
+
 
 
 
@@ -195,9 +199,6 @@ def stir():
         if (i>=47):
             k=i-46
 
-        
-
-        
         if speed ==1:
             time.sleep(0.2)
         elif speed==2:
@@ -274,23 +275,26 @@ def stir():
 
 
 
-def drawBackground():
+def drawKitchenBackground():
 	msg= myfont.render('Press \'s\' to start', False, (0,0,0))
 	screen.blit(msg, (200,50))
 	screen.blit(board, (300, 110))
 	screen.blit(c1, (300, 110))
 	pygame.display.update()
-	
+
 inWorld = True
+start = False
 
 player = Player(100, screen_height - 130)
 
 run = True
+
+
+screen.blit(intro, (0, 0))
+
 while run:
-
+	screen.blit(intro, (0, 0))
 	clock.tick(fps)
-
-	
 #screen.blit(sun_img, (100, 100))
 
 	if player.isAtBoard() == False:
@@ -305,6 +309,8 @@ while run:
 		inWorld=False
 	if keys_pressed[pygame.K_DOWN]:
 		inWorld=True
+	if keys_pressed[pygame.K_SPACE]:
+		start=True
 	#if keys_pressed[pygame.K_a]: #a to go left
 	#	inWorld = False
             
@@ -355,6 +361,8 @@ while run:
 		if event.type == pygame.QUIT:
 			run = False
 
+	if (start==False):
+		screen.blit(intro, (0, 0))
 	pygame.display.update()
 
 pygame.quit()
