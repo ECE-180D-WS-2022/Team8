@@ -12,8 +12,8 @@ import pygame
 from pygame.locals import *
 import cv2
 
-GOAL_STOVE = 28
-GOAL_CUTTING = 28
+GOAL_STOVE = 27
+GOAL_CUTTING = 27
 TOTAL_CUTTING = 1
 TOTAL_STOVE = 1
 IDEAL_SPIN = 1
@@ -24,7 +24,8 @@ FLAG_STOVE = '03'
 FLAG_ROLLING = '04'
 FLAG_POURING = '05'
 STOP = '00'
-
+SCREEN_HEIGHT = 900
+SCREEN_WIDTH = 1200
 
 MESSAGE = '10'
 
@@ -53,14 +54,14 @@ message_received = ''
 speed = 1
 
 #Vision processing code 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(2)
 init_cal = False
 x_c_1 = 0
 y_c_1 = 0
 x_c_2 = 0
 y_c_2 = 0
-lower_thresh_player = np.array([0, 0, 0])
-upper_thresh_player = np.array([0, 0, 0])
+lower_thresh_LED = np.array([159, 80, 200]) #RED LED
+upper_thresh_LED = np.array([180, 255, 255]) #RED LED
 counter = 0 
 x_pos  = 0
 recipe_count = 2
@@ -68,6 +69,70 @@ recipe_count = 2
 all_recipes = np.zeros((recipe_count,5), dtype = int)
 #globals
 
+#player imaging class
+class Playerimg():
+	def __init__(self, x, y):
+		self.images_right = []
+		self.images_left = []
+		self.index = 0
+		self.counter = 0
+		for num in range(1, 5):
+			img_right = pygame.image.load(f'img/chef{num}.png')
+			img_right = pygame.transform.scale(img_right, (300, 600))
+			img_left = pygame.transform.flip(img_right, True, False)
+			self.images_right.append(img_right)
+			self.images_left.append(img_left)
+		self.image = self.images_right[self.index]
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		self.vel_y = 0
+		self.jumped = False
+		self.direction = 0
+
+	def update(self):
+		dx = 0
+		dy = 0
+		walk_cooldown = 5
+
+        #moving left
+		if (self.rect.x - x_pos) < 0:
+			self.counter += 1
+			self.direction = -1
+		#moving right
+		if (self.rect.x - x_pos) > 0:
+			self.counter += 1
+			self.direction = -1
+
+		#handle animation
+		if self.counter > walk_cooldown:
+			self.counter = 0	
+			self.index += 1
+			if self.index >= len(self.images_right):
+				self.index = 0
+			if self.direction == 1:
+				self.image = self.images_right[self.index]
+			if self.direction == -1:
+				self.image = self.images_left[self.index]
+
+
+		#add gravity
+		self.vel_y += 1
+		if self.vel_y > 10:
+			self.vel_y = 10
+		dy += self.vel_y
+
+		#check for collision
+
+		#update player 
+		#print(dx)
+		self.rect.x = x_pos
+		self.rect.y += dy
+
+		if self.rect.bottom > SCREEN_HEIGHT:
+			self.rect.bottom = SCREEN_HEIGHT
+			dy = 0
+#player imaging class
 
 #pygame base code
 
@@ -104,12 +169,12 @@ c27 =pygame.image.load('choppingcarrot/c27.png')
 #knife = pygame.transform.scale(knife, (250, 220))
 board=pygame.image.load('cuttingboard2.png')
 #board = pygame.transform.scale(board, (300, 320))
-# bg_img = pygame.image.load('img/background.png')
-# bg_img = pygame.transform.scale(bg_img, (1200, 900))
-# bg_chopping = pygame.image.load('img/chopping.png')
-# bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
-# bg_stove = pygame.image.load('img/stove.png')
-# bg_stove = pygame.transform.scale(bg_stove, (1200, 900))
+bg_img = pygame.image.load('img/background.png')
+bg_img = pygame.transform.scale(bg_img, (1200, 900))
+bg_chopping = pygame.image.load('img/chopping.png')
+bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
+bg_stove = pygame.image.load('img/stove.png')
+bg_stove = pygame.transform.scale(bg_stove, (1200, 900))
 
 pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 40)
@@ -220,7 +285,6 @@ def calibration():
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         if counter <= 601:
             get_calibration_frames(frame)
-            counter = counter+1
         elif counter == 602:
             print('calibrating...')
             t.sleep(3)
@@ -241,9 +305,8 @@ def task(TIME):
     #print('hi')
     speed = 1
     i = 0
-    windowSize=(800,900)
-
-    win=pygame.display.set_mode(windowSize)
+    windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
+    win=pygame.display.set_mode(windowsize)
     while (TIME > i):
         i = i + speed
         t.sleep(1)
@@ -334,6 +397,7 @@ def on_message(client, userdata, message):
     global in_cooking
     global speed
     global message_received
+    global position
     #data received as b'message'
     temporary = str(message.payload)
     message_received = temporary[4:-1]
@@ -381,13 +445,21 @@ def main():
     global flag_player
     global total_stove
     global total_cutting
+    global x_pos
+    global position
     #wait for player selection
     while(flag_player==0):
         pass
     t.sleep(1)
     print('Welcome to Cooking Papa!')
     #publish again in case of second to enter lobby
+
+    #CALIBRATION PHASE
     calibration()
+    cv2.destroyAllWindows()
+    #CALIBRATION PHASE
+
+    #STARTING SCREEN
     r = sr.Recognizer()
     print('Say Practice to practice and Fight to play against an opponent')
     txt = '0'
@@ -409,6 +481,9 @@ def main():
         client.publish(str(flag_opponent)+'Team8',str(FLAG_START)+'gamestart',qos=1)
     while(flag_received==0):
         pass
+    #STARTING SCREEN
+
+    #WAITING FOR OPPONENT
     t.sleep(2)
     client.publish(str(flag_opponent)+'Team8', str(FLAG_START)+'gamestart',qos=1)
     r = sr.Recognizer()
@@ -426,6 +501,8 @@ def main():
             print("You said " + txt)
         except sr.UnknownValueError:
             print("Google Speech Recognition could not understand audio")
+    #WAITING FOR OPPONENT
+
     print("Let's Begin, Timer starts in...")
     print("3")
     t.sleep(1)
@@ -436,10 +513,39 @@ def main():
     print("GO!")
     start_game = t.time()
     print('Randomizing Recipes: ')
-    recipe_randomizer('hard')    
+    recipe_randomizer('hard') 
+
+    #PLAYER LOCALIZATION   
     while(in_cooking != 2):
         print('Move left to go to the stove, Move right to go to the chopping board')
-        track_player()
+        clock = pygame.time.Clock()
+        fps = 60
+        playerimg = Playerimg(100, 900 - 130)
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption('Cooking Papa 1.0')
+        while True:
+            ret, frame = cap.read()
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            track_player(frame, lower_thresh_player, upper_thresh_player)
+            #define game variables
+            clock.tick(fps)
+            screen.blit(bg_img, (0, 0))
+            playerimg.update()
+            screen.blit(playerimg.image, playerimg.rect)
+            pygame.display.update()
+            cv2.imshow('calibrating frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            if x_pos > 1200:
+                position = STOVE
+                cv2.destroyAllWindows()
+                break
+            elif x_pos < 400: 
+                position = CUTTING
+                cv2.destroyAllWindows()
+                break
+    #PLAYER LOCALIZATION
+
         in_cooking = 1
         if position == STOVE:
             #ask IMU for stove classifier data
