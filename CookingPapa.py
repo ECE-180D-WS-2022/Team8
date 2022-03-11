@@ -12,15 +12,14 @@ import pygame
 from pygame.locals import *
 import cv2
 
-GOAL_STOVE = 27
-GOAL_CUTTING = 27
+GOAL_STIR = 5
+GOAL_CUTTING = 5
 TOTAL_CUTTING = 1
 TOTAL_STOVE = 1
-IDEAL_SPIN = 1
-IDEAL_CUT = 1
+CONTROLLER_BUFFER = 3
 FLAG_START = '01'
 FLAG_CUTTING = '02'
-FLAG_STOVE = '03'
+FLAG_STIR = '03'
 FLAG_ROLLING = '04'
 FLAG_POURING = '05'
 STOP = '00'
@@ -32,8 +31,8 @@ MESSAGE = '10'
 FLAG_SCORE = '99'
 
 #BOARD POSITIONS
-CUTTING = 1
-STOVE = -1
+CUTTING = 3
+STOVE = 2
 #BOARD POSITIONS
 
 ##CONST GLOBALS
@@ -44,14 +43,15 @@ in_cooking = 0
 start = t.time()
 end = t.time()
 diff = end - start
-total_stove = 0
-total_cutting = 0
+last_action = 0
 flag_player = 0
 flag_opponent = 0
 flag_received = 0
 score = 0
 message_received = ''
 speed = 1
+current_goal = 0
+length = 0
 
 #Vision processing code 
 cap = cv2.VideoCapture(2)
@@ -300,14 +300,16 @@ def calibration():
 
 #vision processing code
 
-def task(TIME):
+def task(action):
     global speed
-    #print('hi')
-    speed = 1
+    global current_goal
+    action = int(action)
+    string_action = classifier(action)
+    speed = 1   #default
     i = 0
     windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
     win=pygame.display.set_mode(windowsize)
-    while (TIME > i):
+    while (current_goal > i):
         i = i + speed
         t.sleep(1)
         print (speed)
@@ -319,13 +321,28 @@ def task(TIME):
     return
 
 def check_game():
-    global total_cutting
-    global total_stove
+    global all_recipes
+    global recipe_count
     global in_cooking #trip the flag if the recipe is met
-    if total_cutting >= TOTAL_CUTTING and total_stove >= TOTAL_STOVE:
-        in_cooking = 2
+    global last_action
+    for k in range(recipe_count):
+        if all_recipes[k][0] != 0:
+            for i in range(1,length+1):
+                if all_recipes[k][i] != 0:      #ignore 0 bit
+                    if last_action == all_recipes[k][i]:
+                        all_recipes[k][i] = 0
+                        if k == recipe_count - 1 and i == length:
+                            in_cooking = 2  #game finished
+                            all_recipes[k][0] = 0
+                        return
+                    elif last_action != all_recipes[k][i]: #must do in order
+                        print("Cowabummer, you did the wrong action. You need to " + classifier(all_recipes[k][i])+ " next!")
+                        return
+            all_recipes[k][0] = 0       #recipe done
+    in_cooking = 2 #game finished
 
 def recipe_randomizer(difficulty):  #randomize all recipe's length based off of difficulty
+    global length
     if difficulty == 'hard':
         length = 4
     elif difficulty == 'normal':
@@ -335,6 +352,7 @@ def recipe_randomizer(difficulty):  #randomize all recipe's length based off of 
     global all_recipes
     for k in range(recipe_count):
         print('Recipe: '+ str(k+1))
+        all_recipes[k][0] = 1
         for i in range(1,length+1):     #length is not inclusive
             all_recipes[k][i] = random.randint(2,3)
             print(str(i)+'. '+ classifier(all_recipes[k][i])) 
@@ -343,16 +361,25 @@ def print_recipes():
     global recipe_count
     global all_recipes
     for k in range(recipe_count):
-        print('Recipe: '+str(k+1))
-        for i in range(1,5):
-            print(str(i)+'. ' + classifier(all_recipes[k][i]))
+        if all_recipes[k][0] != 0:
+            print('Recipe: '+str(k+1))
+            for i in range(1,5):
+                print(str(i)+'. ' + classifier(all_recipes[k][i]))
 
 def classifier(num):    #classify for user output
+    global current_goal
     if int(num) == int(FLAG_CUTTING):
         output = 'Cut'
-    elif int(num) == int(FLAG_STOVE):
+        current_goal = GOAL_CUTTING
+    elif int(num) == int(FLAG_STIR):
         output = 'Stir'
+        current_goal = GOAL_STIR
+    elif int(num) == 0:
+        output = 'DONE'
     return output
+
+def check_action(action):
+    global all_recipes
 
 def on_connect(client, userdata, flags, rc):
     global flag_player
@@ -365,16 +392,8 @@ def on_connect(client, userdata, flags, rc):
 # The callback of the client when it disconnects.
     txt = '0'
     while(flag_player == 0):
-        r = sr.Recognizer()
         print("Which player are you playing as, Player 1 or Player 2?")
-        with sr.Microphone(device_index=1) as source:
-            audio = r.listen(source,phrase_time_limit = 2)
-        try:
-            txt = r.recognize_google(audio)
-            txt = str(txt)
-            print("You said " + txt)
-        except sr.UnknownValueError:
-            print("Google Speech Recognition could not understand audio")
+        txt = from_speech()
         if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
             flag_player = 1
             flag_opponent = 2
@@ -397,18 +416,17 @@ def on_message(client, userdata, message):
     global in_cooking
     global speed
     global message_received
-    global position
     #data received as b'message'
     temporary = str(message.payload)
     message_received = temporary[4:-1]
     flag_received = temporary[2:4]
-    #print('flag received: '+ str(flag_received))
+    print('flag received: '+ str(flag_received))
     #print(temporary)
     #print(message_received)
     #score flag received
-    if (str(flag_received) == str(FLAG_STOVE) and position == STOVE):
+    if (str(flag_received) == str(FLAG_STIR)):
         speed = int(message_received)
-    elif (str(flag_received) == str(FLAG_CUTTING) and position == CUTTING):
+    elif (str(flag_received) == str(FLAG_CUTTING)):
         speed = int(message_received)
     elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
@@ -422,58 +440,65 @@ def on_message(client, userdata, message):
             client.disconnect()
     elif flag_received == str(MESSAGE):
         print(str(message_received))
-#
-#GAME STARTS HERE
-#GAME STARTS HERE
-#GAME STARTS HERE
-#
-client = mqtt.Client()
-# add additional client options (security, certifications, etc.)
-# many default options should be good to start off.
-# add callbacks to client.
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
-# 2. connect to a broker using one of the connect*() functions.
-client.connect_async("test.mosquitto.org")
-client.loop_start()
-##CONST GLOBALS
+
+def from_speech():
+    r = sr.Recognizer()
+    txt = '0'
+    with sr.Microphone(device_index=1) as source:
+        audio = r.listen(source,phrase_time_limit = 1.25)
+    try:
+        txt = r.recognize_google(audio)
+        txt = str(txt)
+        return txt
+    except sr.UnknownValueError:
+        txt = '0'
+        return txt
+
 def main():
+    #####################
+    #GLOBAL DECLARATIONS
+    #####################
     global score
     global in_cooking
     global flag_opponent
     global flag_player
-    global total_stove
-    global total_cutting
+    global last_action
     global x_pos
     global position
-    #wait for player selection
-    while(flag_player==0):
+    #####################
+    #GLOBAL DECLARATIONS
+    #####################
+    
+    while(flag_player==0): #Waiting for player selection
         pass
     t.sleep(1)
     print('Welcome to Cooking Papa!')
-    #publish again in case of second to enter lobby
 
+    ##################
     #CALIBRATION PHASE
+    ##################
     calibration()
     cv2.destroyAllWindows()
+    ##################
     #CALIBRATION PHASE
+    ##################
 
+    ################
     #STARTING SCREEN
-    r = sr.Recognizer()
-    print('Say Practice to practice and Fight to play against an opponent')
+    ################
     txt = '0'
     while txt.lower() != 'practice' and txt.lower() != 'fight':
-        with sr.Microphone(device_index=1) as source:
-            audio = r.listen(source,phrase_time_limit = 2)
-        try:
-            txt = r.recognize_google(audio)
-            txt = str(txt)
-            print("You said " + txt)
-            if txt == 'bracket':  #common word
-                txt = 'practice'
-        except sr.UnknownValueError:
-            print("Google Speech Recognition could not understand audio")
+        print('Say Practice to practice and Fight to play against an opponent')
+        txt = from_speech()
+        if txt == 'brackets':  #common word
+            txt = 'practice'
+    ################
+    #STARTING SCREEN
+    ################
+
+    #####################
+    #WAITING FOR OPPONENT
+    #####################
     if txt.lower() == 'practice':
         flag_received = 99
     elif txt.lower() == 'fight':
@@ -481,27 +506,19 @@ def main():
         client.publish(str(flag_opponent)+'Team8',str(FLAG_START)+'gamestart',qos=1)
     while(flag_received==0):
         pass
-    #STARTING SCREEN
-
-    #WAITING FOR OPPONENT
-    t.sleep(2)
+    t.sleep(1)
     client.publish(str(flag_opponent)+'Team8', str(FLAG_START)+'gamestart',qos=1)
     r = sr.Recognizer()
     if txt.lower() == 'practice':
         txt = 'ready'
     else:
         txt = '0'
-    print("Say Ready to begin")
     while txt.lower() != 'ready':
-        with sr.Microphone(device_index=1) as source:
-            audio = r.listen(source,phrase_time_limit = 2)
-        try:
-            txt = r.recognize_google(audio)
-            txt = str(txt)
-            print("You said " + txt)
-        except sr.UnknownValueError:
-            print("Google Speech Recognition could not understand audio")
+        print("Say Ready to begin")
+        txt = from_speech()
+    #####################
     #WAITING FOR OPPONENT
+    #####################
 
     print("Let's Begin, Timer starts in...")
     print("3")
@@ -515,7 +532,9 @@ def main():
     print('Randomizing Recipes: ')
     recipe_randomizer('hard') 
 
-    #PLAYER LOCALIZATION   
+    ####################
+    #PLAYER LOCALIZATION
+    ####################   
     while(in_cooking != 2):
         print('Move left to go to the stove, Move right to go to the chopping board')
         clock = pygame.time.Clock()
@@ -544,23 +563,20 @@ def main():
                 position = CUTTING
                 cv2.destroyAllWindows()
                 break
+    ####################
     #PLAYER LOCALIZATION
-
+    ####################
+    
+    ###############
+    #PLAYER ACTIONS
+    ###############
         in_cooking = 1
         if position == STOVE:
             #ask IMU for stove classifier data
-            r = sr.Recognizer()
-            print("Say spoon to start stirring")
             txt = '0'
             while txt.lower() == 'spoon':
-                with sr.Microphone(device_index=1) as source:
-                    audio = r.listen(source,phrase_time_limit = 2)
-                try:
-                    txt = r.recognize_google(audio)
-                    txt = str(txt)
-                    print("You said " + txt)
-                except sr.UnknownValueError:
-                    print("Google Speech Recognition could not understand audio")
+                print("Say 'spoon' to start stirring")
+                txt = from_speech()
                 check = txt.lower()
                 i = 0
                 for i in range (len(check)-1):  #double o will also trigger the spoon keyword
@@ -571,47 +587,66 @@ def main():
                             txt = 'spoon'
                             break
             print('waiting for input')
-            client.publish(str(flag_player)+'Team8B', str(FLAG_STOVE), qos=1)
-            t.sleep(5)
+            client.publish(str(flag_player)+'Team8B', str(FLAG_STIR), qos=1)
+            t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(GOAL_STOVE)
-            total_stove = total_stove + 1
+            task(FLAG_STIR)
+            last_action = int(FLAG_STIR)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
 
         elif position == CUTTING:
             #ask IMU for cutting classifier data
-            r = sr.Recognizer()
-            print("Say knife to start cutting")
             txt = '0'
             while txt.lower() == 'knife':
-                with sr.Microphone(device_index=1) as source:
-                    audio = r.listen(source,phrase_time_limit = 2)
-                try:
-                    txt = r.recognize_google(audio)
-                    txt = str(txt)
-                    print("You said " + txt)
-                except sr.UnknownValueError:
-                    print("Google Speech Recognition could not understand audio")
+                print("Say knife to start cutting")
+                txt = from_speech()
                 if txt.lower() == 'night':   #common word
                     txt = 'knife'
+        
             print('waiting for input')
             client.publish(str(flag_player)+'Team8B', str(FLAG_CUTTING), qos=1)
-            t.sleep(5)
+            t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(GOAL_CUTTING)
-            total_cutting = total_cutting + 1
+            task(FLAG_CUTTING)
+            last_action = int(FLAG_CUTTING)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
         in_cooking = 0
+    ###############
+    #PLAYER ACTIONS
+    ###############
 
-        #game ending conditions
+
+    #########
+    #GAME END
+    #########
         check_game()
+        print_recipes()
     end_game = t.time()
     score = end_game-start_game
     print('Your time was: ' + str(score))
     client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
+    #########
+    #GAME END
+    #########
     print("waiting for opponent's time...")
     while True:
         pass
+
+##################
+#GAME STARTS HERE#
+#GAME STARTS HERE#
+#GAME STARTS HERE#
+##################
+client = mqtt.Client()
+# add additional client options (security, certifications, etc.)
+# many default options should be good to start off.
+# add callbacks to client.
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.on_message = on_message
+# 2. connect to a broker using one of the connect*() functions.
+client.connect_async("test.mosquitto.org")
+client.loop_start()
 main()
