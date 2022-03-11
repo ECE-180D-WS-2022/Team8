@@ -51,6 +51,7 @@ s20 =pygame.image.load('images\stir\s20.png')
 s21 =pygame.image.load('images\stir\s21.png')
 s22 =pygame.image.load('images\stir\s22.png')
 s23 =pygame.image.load('images\stir\s23.png')
+bg_stove = pygame.image.load('images/stir/background2.png')
 
 
 

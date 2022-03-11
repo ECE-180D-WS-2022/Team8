@@ -25,7 +25,7 @@ atBoard = False
 #sun_img = pygame.image.load('img/sun.png')
 bg_img = pygame.image.load('images/kitchen_half.png')
 bg_img = pygame.transform.scale(bg_img, (1200, 900))
-bg_chopping = pygame.image.load('images\chopping.png')
+bg_chopping = pygame.image.load('images/chopping.png')
 bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
 bg_stove = pygame.image.load('images/stir/background2.png')
 
@@ -35,63 +35,77 @@ green = (2, 100,64)
 black = (0,0,0)
 
 #look in same folder as script for images
-c1 =pygame.image.load('images\choppingcarrot_resize\cc1.png')
-c2 =pygame.image.load('images\choppingcarrot_resize\cc2.png')
-c3 =pygame.image.load('images\choppingcarrot_resize\cc3.png')
-c4 =pygame.image.load('images\choppingcarrot_resize\cc4.png')
-c5 =pygame.image.load('images\choppingcarrot_resize\cc5.png')
-c6 =pygame.image.load('images\choppingcarrot_resize\cc6.png')
-c7 =pygame.image.load('images\choppingcarrot_resize\cc7.png')
-c8 =pygame.image.load('images\choppingcarrot_resize\cc8.png')
-c9 =pygame.image.load('images\choppingcarrot_resize\cc9.png')
-c10 =pygame.image.load('images\choppingcarrot_resize\cc10.png')
-c11 =pygame.image.load('images\choppingcarrot_resize\cc11.png')
-c12 =pygame.image.load('images\choppingcarrot_resize\cc12.png')
-c13 =pygame.image.load('images\choppingcarrot_resize\cc13.png')
-c14 =pygame.image.load('images\choppingcarrot_resize\cc14.png')
-c15 =pygame.image.load('images\choppingcarrot_resize\cc15.png')
-c16 =pygame.image.load('images\choppingcarrot_resize\cc16.png')
-c17 =pygame.image.load('images\choppingcarrot_resize\cc17.png')
-c18 =pygame.image.load('images\choppingcarrot_resize\cc18.png')
-c19 =pygame.image.load('images\choppingcarrot_resize\cc19.png')
-c20 =pygame.image.load('images\choppingcarrot_resize\cc20.png')
-c21 =pygame.image.load('images\choppingcarrot_resize\cc21.png')
-c22 =pygame.image.load('images\choppingcarrot_resize\cc22.png')
-c23 =pygame.image.load('images\choppingcarrot_resize\cc23.png')
-c24 =pygame.image.load('images\choppingcarrot_resize\cc24.png')
-c25 =pygame.image.load('images\choppingcarrot_resize\cc25.png')
-c26 =pygame.image.load('images\choppingcarrot_resize\cc26.png')
-c27 =pygame.image.load('images\choppingcarrot_resize\cc27.png')
+c1 =pygame.image.load('images/choppingcarrot_resize/cc1.png')
+c2 =pygame.image.load('images/choppingcarrot_resize/cc2.png')
+c3 =pygame.image.load('images/choppingcarrot_resize/cc3.png')
+c4 =pygame.image.load('images/choppingcarrot_resize/cc4.png')
+c5 =pygame.image.load('images/choppingcarrot_resize/cc5.png')
+c6 =pygame.image.load('images/choppingcarrot_resize/cc6.png')
+c7 =pygame.image.load('images/choppingcarrot_resize/cc7.png')
+c8 =pygame.image.load('images/choppingcarrot_resize/cc8.png')
+c9 =pygame.image.load('images/choppingcarrot_resize/cc9.png')
+c10 =pygame.image.load('images/choppingcarrot_resize/cc10.png')
+c11 =pygame.image.load('images/choppingcarrot_resize/cc11.png')
+c12 =pygame.image.load('images/choppingcarrot_resize/cc12.png')
+c13 =pygame.image.load('images/choppingcarrot_resize/cc13.png')
+c14 =pygame.image.load('images/choppingcarrot_resize/cc14.png')
+c15 =pygame.image.load('images/choppingcarrot_resize/cc15.png')
+c16 =pygame.image.load('images/choppingcarrot_resize/cc16.png')
+c17 =pygame.image.load('images/choppingcarrot_resize/cc17.png')
+c18 =pygame.image.load('images/choppingcarrot_resize/cc18.png')
+c19 =pygame.image.load('images/choppingcarrot_resize/cc19.png')
+c20 =pygame.image.load('images/choppingcarrot_resize/cc20.png')
+c21 =pygame.image.load('images/choppingcarrot_resize/cc21.png')
+c22 =pygame.image.load('images/choppingcarrot_resize/cc22.png')
+c23 =pygame.image.load('images/choppingcarrot_resize/cc23.png')
+c24 =pygame.image.load('images/choppingcarrot_resize/cc24.png')
+c25 =pygame.image.load('images/choppingcarrot_resize/cc25.png')
+c26 =pygame.image.load('images/choppingcarrot_resize/cc26.png')
+c27 =pygame.image.load('images/choppingcarrot_resize/cc27.png')
 board=pygame.image.load('images\cuttingboard3.png')
 
 #stirring photos
-s1 =pygame.image.load('images\stir\s1.png')
-s2 =pygame.image.load('images\stir\s2.png')
-s3 =pygame.image.load('images\stir\s3.png')
-s4 =pygame.image.load('images\stir\s4.png')
-s5 =pygame.image.load('images\stir\s5.png')
-s6 =pygame.image.load('images\stir\s6.png')
-s7 =pygame.image.load('images\stir\s7.png')
-s8 =pygame.image.load('images\stir\s8.png')
-s9 =pygame.image.load('images\stir\s9.png')
-s10 =pygame.image.load('images\stir\s10.png')
-s11 =pygame.image.load('images\stir\s11.png')
-s12 =pygame.image.load('images\stir\s12.png')
-s13 =pygame.image.load('images\stir\s13.png')
-s14 =pygame.image.load('images\stir\s14.png')
-s15 =pygame.image.load('images\stir\s15.png')
-s16 =pygame.image.load('images\stir\s16.png')
-s17 =pygame.image.load('images\stir\s17.png')
-s18 =pygame.image.load('images\stir\s18.png')
-s19 =pygame.image.load('images\stir\s19.png')
-s20 =pygame.image.load('images\stir\s20.png')
-s21 =pygame.image.load('images\stir\s21.png')
-s22 =pygame.image.load('images\stir\s22.png')
-s23 =pygame.image.load('images\stir\s23.png')
+s1 =pygame.image.load('images/stir/s1.png')
+s2 =pygame.image.load('images/stir/s2.png')
+s3 =pygame.image.load('images/stir/s3.png')
+s4 =pygame.image.load('images/stir/s4.png')
+s5 =pygame.image.load('images/stir/s5.png')
+s6 =pygame.image.load('images/stir/s6.png')
+s7 =pygame.image.load('images/stir/s7.png')
+s8 =pygame.image.load('images/stir/s8.png')
+s9 =pygame.image.load('images/stir/s9.png')
+s10 =pygame.image.load('images/stir/s10.png')
+s11 =pygame.image.load('images/stir/s11.png')
+s12 =pygame.image.load('images/stir/s12.png')
+s13 =pygame.image.load('images/stir/s13.png')
+s14 =pygame.image.load('images/stir/s14.png')
+s15 =pygame.image.load('images/stir/s15.png')
+s16 =pygame.image.load('images/stir/s16.png')
+s17 =pygame.image.load('images/stir/s17.png')
+s18 =pygame.image.load('images/stir/s18.png')
+s19 =pygame.image.load('images/stir/s19.png')
+s20 =pygame.image.load('images/stir/s20.png')
+s21 =pygame.image.load('images/stir/s21.png')
+s22 =pygame.image.load('images/stir/s22.png')
+s23 =pygame.image.load('images/stir/s23.png')
 fire =pygame.image.load('images/stir/fire.png')
 
-intro = pygame.image.load('images\CookingPapa_intro.png')
-recipes = pygame.image.load('images\CookingPapa_recipeS.png')
+intro = pygame.image.load('images/CookingPapa_intro.png')
+recipes = pygame.image.load('images/CookingPapa_recipeS.png')
+
+poc1 = pygame.image.load('images/pour/poc1.png')
+poc2 = pygame.image.load('images/pour/poc2.png')
+poc3 = pygame.image.load('images/pour/poc3.png')
+poc4 = pygame.image.load('images/pour/poc4.png')
+poc5 = pygame.image.load('images/pour/poc5.png')
+poc6 = pygame.image.load('images/pour/poc6.png')
+poc7 = pygame.image.load('images/pour/poc8.png')
+poc8 = pygame.image.load('images/pour/poc8.png')
+poc9 = pygame.image.load('images/pour/poc9.png')
+poc10 = pygame.image.load('images/pour/poc10.png')
+poc11 = pygame.image.load('images/pour/poc11.png')
+poc12 = pygame.image.load('images/pour/poc12.png')
+poc13 = pygame.image.load('images/pour/poc13.png')
 
 '''player class, use this to move the player'''
 class Player():
@@ -182,7 +196,8 @@ class Player():
 		screen.blit(self.image, self.rect)
 clock = pygame.time.Clock()
 
-def stir():
+def stirring():
+    pourCarrots()
     for i in range(1,115):
         k=i
        # print('it:'+str(it))
@@ -195,13 +210,14 @@ def stir():
         if (i>=93):
             k=i-92
         
-        clock.tick(2*speed)  
+        time.sleep(0.05) 
         var_name = "s"+str(k)
         screen.fill(backgroundColor)
+        screen.blit(bg_stove,(0,0))
         screen.blit(globals()[var_name], (340, 220))
-		screen.blit(bg_stove,(0,0))
         #redraw progress bar outline
-		pygame.draw.rect(screen, black, pygame.Rect(349, 820, 500, 30),2 )
+        pygame.draw.rect(screen, backgroundColor, pygame.Rect(350, 821, 498, 28))
+        pygame.draw.rect(screen, black, pygame.Rect(349, 820, 500, 30),2 )
         '''
         if (speed==3):
             win.blit(great, (200,50))
@@ -217,7 +233,7 @@ def stir():
         pygame.display.update()
 
 
-def chop():
+def chopping():
     for i in range(1,28):
        # print('it:'+str(it))
         time.sleep(0.1)
@@ -231,6 +247,8 @@ def chop():
         for t in range(0,x):
             pygame.draw.rect(screen, green, pygame.Rect(350+(50*t), 721, 48, 28) )
         pygame.display.update()
+    doneChopping=True
+
 
 msg= myfont.render('Press \'s\' to start', False, (0,0,0))
 
@@ -251,7 +269,35 @@ def drawStoveBackground():
 	 #draw progress bar outline
 	pygame.draw.rect(screen, black, pygame.Rect(349, 820, 500, 30),2 )
 	pygame.draw.rect(screen, backgroundColor, pygame.Rect(350, 821, 498, 28))
-	pygame.display.update()
+	
+
+def pourCarrots():
+    for i in range(1,14):
+       # print('it:'+str(it))
+        time.sleep(0.1)
+        screen.fill(backgroundColor)
+        screen.blit(bg_stove, (0, 0))
+        screen.blit(msg, (200,50))
+        screen.blit(s1, (340, 220))
+	    #draw progress bar outline
+        pygame.draw.rect(screen, black, pygame.Rect(349, 820, 500, 30),2 )
+        pygame.draw.rect(screen, backgroundColor, pygame.Rect(350, 821, 498, 28))
+        var_name1 = "poc"+str(i)
+        screen.blit(globals()[var_name1], (450, 50))
+        pygame.display.update()
+
+def finishedChopping():
+    screen.blit(board, (0, 0))
+    screen.blit(c27, (200, 110))
+	#increment progress bar
+    pygame.draw.rect(screen, black, pygame.Rect(349, 720, 500, 30),2 )
+    #increment progress bars
+    x = round(27/27*10)
+    for t in range(0,x):
+        pygame.draw.rect(screen, green, pygame.Rect(350+(50*t), 721, 48, 28) )
+
+
+
 
 inWorld = True
 start = False
@@ -259,6 +305,7 @@ start = False
 player = Player(100, screen_height - 130)
 
 run = True
+doneChopping = False
 
 while run:
 	screen.blit(intro, (0, 0))
@@ -283,17 +330,20 @@ while run:
 	if (inWorld):
 		screen.blit(bg_img, (0, 0))
 		player.update()
-	elif atBoard == True:	
-		drawChoppingBackground()
+    elif atBoard == True:	
+        if doneChopping:
+            finishedChopping()
+        else:
+		    drawChoppingBackground()
 		keys_pressed = pygame.key.get_pressed()
 		if keys_pressed[pygame.K_s]: #s to start
-			chop() 
-
+			chopping() 
 	elif atStove == True:
 		drawStoveBackground()
 		keys_pressed = pygame.key.get_pressed()
 		if keys_pressed[pygame.K_s]: #s to start
-			stir() 
+			stirring() 
+            #finishedStirring()
 
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
