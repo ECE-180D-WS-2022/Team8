@@ -3,7 +3,6 @@ from pygame.locals import *
 import time
 import threading
 
-pygame.init()
 pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 40)
 clock = pygame.time.Clock()
@@ -24,7 +23,7 @@ atBoard = False
 
 #load images
 #sun_img = pygame.image.load('img/sun.png')
-bg_img = pygame.image.load('images/background.png')
+bg_img = pygame.image.load('images/kitchen_half.png')
 bg_img = pygame.transform.scale(bg_img, (1200, 900))
 bg_chopping = pygame.image.load('images\chopping.png')
 bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
@@ -357,9 +356,9 @@ while run:
 			stir() 
 
 
-	for event in pygame.event.get():
+	'''for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			run = False
+			run = False'''
 
 	if (start==False):
 		screen.blit(intro, (0, 0))
