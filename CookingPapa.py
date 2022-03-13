@@ -54,6 +54,7 @@ message_received = ''
 speed = 1
 current_goal = 0
 length = 0
+gamestart = False
 
 #colors
 backgroundColor=(255, 255, 255)
@@ -64,7 +65,6 @@ windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
 win=pygame.display.set_mode(windowsize)
 
 #Vision processing code 
-cap = cv2.VideoCapture(2)
 init_cal = False
 x_c_1 = 0
 y_c_1 = 0
@@ -85,7 +85,7 @@ class Playerimg():
 		self.index = 0
 		self.counter = 0
 		for num in range(1, 5):
-			img_right = pygame.image.load(f'img/chef{num}.png')
+			img_right = pygame.image.load(f'images/chef{num}.png')
 			img_right = pygame.transform.scale(img_right, (300, 600))
 			img_left = pygame.transform.flip(img_right, True, False)
 			self.images_right.append(img_right)
@@ -229,15 +229,17 @@ poc13 = pygame.image.load('images/pour/poc13.png')
 calimg = pygame.image.load('images/calibration_instructions.png')
 modimg = pygame.image.load('images/game_mode_selection.png')
 playimg = pygame.image.load('images/player_selection.png')
-play1img = pygame.image.load('images/player1_selected.png')
-play2img = pygame.image.load('images/player2_selected.png')
 #videos
 pygame.init()
 pygame.mixer.quit()
 intro = moviepy.editor.VideoFileClip('images/welcome_screen.mp4')
 loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
-
-
+modvid = moviepy.editor.VideoFileClip('images/game_mode_selection_vid.mp4')
+calvid = moviepy.editor.VideoFileClip('images/calibration_instructions_vid.mp4')
+countdown = moviepy.editor.VideoFileClip('images/3_2_1.mp4')
+playvid = moviepy.editor.VideoFileClip('images/player_selection_vid.mp4')
+play1vid = moviepy.editor.VideoFileClip('images/player_1_selected.mp4')
+play2vid = moviepy.editor.VideoFileClip('images/player_2_selected.mp4')
 #fonts
 #pygame.font.init()
 myfont = pygame.font.SysFont('Arial', 40)
@@ -322,6 +324,7 @@ def calibration():
     global upper_thresh_player
     while (True):
         ret, frame = cap.read()
+        frame = cv2.flip(frame,0)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         if counter <= 301:
             get_calibration_frames(frame)
@@ -366,7 +369,7 @@ def task(action, back, x, y, msg_begin):
     drawBackground(back, globals()[letter+'1'], x, y, msg_begin)
     while (current_goal > i):
         i = i + speed
-        t.sleep(0.01)
+        t.sleep(0.4)
         print (speed)
         win.blit(back, (0, 0))
         var_name2 = letter+str(i)
@@ -478,9 +481,10 @@ def check_action(action):
     global all_recipes
 
 def on_connect(client, userdata, flags, rc):
-    global flag_player
-    global flag_opponent
+    global gamestart
     print("Connection returned result: "+str(rc))
+    while (gamestart==False):
+        loading.preview()
     
 # Subscribing in on_connect() means that if we lose the connection and
 # reconnect then subscriptions will be renewed.
@@ -553,15 +557,13 @@ def main():
     #GLOBAL DECLARATIONS
     #####################
     intro.preview()
-    t.sleep(1)
-    print('Welcome to Cooking Papa!')
-    loading.preview()
-    t.sleep(3)
-    #
 
     ##################
     #CALIBRATION PHASE
     ##################
+    loading.preview()
+    loading.preview()
+    calvid.preview()
     calibration()
     cv2.destroyAllWindows()
     ##################
@@ -572,10 +574,12 @@ def main():
     #STARTING SCREEN
     ################
     txt = '0'
-    while txt.lower() != 'practice' and txt.lower() != 'fight':
-        print('Say Practice to practice and Fight to play against an opponent')
+    modvid.preview()
+    while txt.lower() != 'practice' and txt.lower() != 'competition':
+        win.blit(modimg,(0,0))
+        print('Say Practice to practice and Competition to play against an opponent')
         #win.blit(intro, (0,0))
-        txt = "practice"#from_speech()
+        txt = from_speech()
         if txt == 'brackets':  #common word
             txt = 'practice'
     ################
@@ -588,7 +592,7 @@ def main():
     if txt.lower() == 'practice':
         flag_player = 1
     else:
-        
+        playvid.preview()
     while(flag_player == 0):
         win.blit(playimg,(0,0))
         pygame.display.update()
@@ -597,11 +601,11 @@ def main():
         if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
             flag_player = 1
             flag_opponent = 2
-            play1img.preview()
+            play1vid.preview()
         elif txt.lower() == 'player two' or txt.lower() == 'player to' or txt.lower() == 'player too' or txt.lower() == 'player 2':
             flag_player = 2
             flag_opponent = 1
-            play2img.preview()
+            play2vid.preview()
     client.subscribe(str(flag_player)+'Team8', qos=1)
     #subscribing to mqtt to receive IMU data
     #messages must only be received once hence qos is 2
@@ -610,17 +614,10 @@ def main():
     #WAITING FOR OPPONENT
     #####################
 
-    print("Let's Begin, Timer starts in...")
-    print("3")
-    t.sleep(1)
-    print("2")
-    t.sleep(1)
-    print("1")
-    t.sleep(1)
-    print("GO!")
+    loading.preview()
     start_game = t.time()
     print('Randomizing Recipes: ')
-    recipe_randomizer('hard') 
+    recipe_randomizer('easy') 
 
     ####################
     #PLAYER LOCALIZATION
@@ -634,6 +631,7 @@ def main():
         pygame.display.set_caption('Cooking Papa 1.0')
         while True:
             ret, frame = cap.read()
+            frame = cv2.flip(frame,0)
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             track_player(frame, lower_thresh_player, upper_thresh_player)
             #define game variables
@@ -642,21 +640,20 @@ def main():
             playerimg.update()
             screen.blit(playerimg.image, playerimg.rect)
             pygame.display.update()
-            cv2.imshow('calibrating frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            if x_pos > 1200:
-                position = STOVE
+            if x_pos > 800:
+                position = CUTTING
                 cv2.destroyAllWindows()
                 break
             elif x_pos < 400: 
-                position = CUTTING
+                position = STOVE
                 cv2.destroyAllWindows()
                 break
     ####################
     #PLAYER LOCALIZATION
     ####################
-        position = random.randint(2,3)
+
     ###############
     #PLAYER ACTIONS
     ###############
@@ -743,6 +740,6 @@ client.on_message = on_message
 # 2. connect to a broker using one of the connect*() functions.
 client.connect_async("test.mosquitto.org")
 client.loop_start()
+cap = cv2.VideoCapture(2)
+gamestart = True
 main()
-
-
