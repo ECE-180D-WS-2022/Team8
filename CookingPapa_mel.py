@@ -9,8 +9,10 @@ import speech_recognition as sr
 import random
 import numpy as np
 import pygame
+from pygame import movie
 from pygame.locals import *
 import cv2
+import moviepy.editor
 
 GOAL_STIR = 23
 GOAL_CUTTING = 27
@@ -219,8 +221,7 @@ s23 =pygame.image.load('images/stir/s23.png')
 fire =pygame.image.load('images/stir/fire.png')
 
 intro = pygame.image.load('images/CookingPapa_intro.png')
-recipes = pygame.image.load('images/CookingPapa_recipeS.png')
-vs_score = pygame.image.load('images/scorepage2.png')
+vs_score = pygame.image.load('images/score_page.png')
 
 poc1 = pygame.image.load('images/pour/poc1.png')
 poc2 = pygame.image.load('images/pour/poc2.png')
@@ -236,8 +237,13 @@ poc11 = pygame.image.load('images/pour/poc11.png')
 poc12 = pygame.image.load('images/pour/poc12.png')
 poc13 = pygame.image.load('images/pour/poc13.png')
 
+#videos
+pygame.init()
+pygame.mixer.quit()
+loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+
 #fonts
-pygame.font.init()
+#pygame.font.init()
 myfont = pygame.font.SysFont('Arial', 40)
 msg_spoon= myfont.render('Say spoon to start', False, (0,0,0))
 msg_knife= myfont.render('Say knife to start', False, (0,0,0))
@@ -600,7 +606,8 @@ def main():
         pass
     t.sleep(1)
     print('Welcome to Cooking Papa!')
-    
+    loading.preview()
+    t.sleep(3)
     #
 
     ##################
