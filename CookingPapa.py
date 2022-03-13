@@ -54,7 +54,7 @@ message_received = ''
 speed = 1
 current_goal = 0
 length = 0
-gamestart = False
+gamestart = 1
 
 #colors
 backgroundColor=(255, 255, 255)
@@ -134,7 +134,7 @@ class Playerimg():
 
 		#update player 
 		#print(dx)
-		self.rect.x = x_pos
+		self.rect.x = x_pos - 150
 		self.rect.y += dy
 
 		if self.rect.bottom > SCREEN_HEIGHT:
@@ -211,6 +211,7 @@ fire =pygame.image.load('images/stir/fire.png')
 #stirring photos
 
 vs_score = pygame.image.load('images/score_page.png')
+vs_score_opp = pygame.image.load('images/score_page_opp.png')
 
 poc1 = pygame.image.load('images/pour/poc1.png')
 poc2 = pygame.image.load('images/pour/poc2.png')
@@ -271,7 +272,7 @@ def track_player(frame, lower_thresh_player, upper_thresh_player):
             #print(x)
             #if abs(prev_x - x) <= 150:
             cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-            x_pos = (x + int(w/2))*2
+            x_pos = 1200 - (x + int(w/2))*2
 
 def get_calibration_frames(frame):
     global x_c_1
@@ -322,9 +323,11 @@ def calibration():
     global counter
     global lower_thresh_player
     global upper_thresh_player
+    surface = pygame.display.set_mode([1200,900])
     while (True):
         ret, frame = cap.read()
-        frame = cv2.flip(frame,0)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        cv2.flip(frame, 1)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         if counter <= 301:
             get_calibration_frames(frame)
@@ -336,10 +339,19 @@ def calibration():
             print('exiting calibration...')
             return
         counter = counter+1
-        cv2.imshow('calibrating frame', frame)
-        # Display the resulting frames
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    # The video uses BGR colors and PyGame needs RGB
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        surf = pygame.surfarray.make_surface(frame)
+        for event in pygame.event.get():
+            if event.type == pygame.KEYUP:
+                background_color = red
+                surface.fill(background_color)
+                pygame.display.update
+                end_time = self.time()
+        surface.blit(calimg,(0,0))
+        # Show the PyGame surface!
+        surface.blit(surf, (300,300))
+        pygame.display.flip()
 
 #vision processing code
 
@@ -369,7 +381,9 @@ def task(action, back, x, y, msg_begin):
     drawBackground(back, globals()[letter+'1'], x, y, msg_begin)
     while (current_goal > i):
         i = i + speed
-        t.sleep(0.4)
+        if (i > current_goal):
+            i = current_goal
+        t.sleep(0.7)
         print (speed)
         win.blit(back, (0, 0))
         var_name2 = letter+str(i)
@@ -398,12 +412,18 @@ def taskCompleted(backdrop, action_frame, coord_x, coord_y, msg):
     progressBarChops(1, 1)
     pygame.display.update()
 
-def displayScore(score, feedback):
+def displayScore(score, opponent_score, feedback):
+    global flag_player
     msg_score= myfont.render(str(round(score)), False, (0,0,0))
+    msg_opponent = myfont.render(str(round(opponent_score)), False,(0,0,0))
     msg_feedback= myfont.render(feedback, False, (0,0,0))
     str(round(score))
-    win.blit(vs_score, (0,0))
+    if flag_player == 3:
+        win.blit(vs_score, (0,0))
+    else:
+        win.blit(vs_score_opp)
     win.blit(msg_score, (900,670))
+    win.blit(msg_opponent(1000,750))
     win.blit(msg_feedback, (350,400))
     pygame.display.update()
 
@@ -424,6 +444,7 @@ def check_game():
     global recipe_count
     global in_cooking #trip the flag if the recipe is met
     global last_action
+    global length
     for k in range(recipe_count):
         if all_recipes[k][0] != 0:
             for i in range(1,length+1):
@@ -459,10 +480,11 @@ def recipe_randomizer(difficulty):  #randomize all recipe's length based off of 
 def print_recipes():
     global recipe_count
     global all_recipes
+    global length
     for k in range(recipe_count):
         if all_recipes[k][0] != 0:
             print('Recipe: '+str(k+1))
-            for i in range(1,5):
+            for i in range(1,length+1):
                 print(str(i)+'. ' + classifier(all_recipes[k][i]))
 
 def classifier(num):    #classify for user output
@@ -483,9 +505,7 @@ def check_action(action):
 def on_connect(client, userdata, flags, rc):
     global gamestart
     print("Connection returned result: "+str(rc))
-    while (gamestart==False):
-        loading.preview()
-    
+    gamestart = rc
 # Subscribing in on_connect() means that if we lose the connection and
 # reconnect then subscriptions will be renewed.
 # client.subscribe("ece180d/test")
@@ -517,13 +537,13 @@ def on_message(client, userdata, message):
     elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
             if 1000-float(score) > 1000-float(message_received):
-                displayScore(score, 'You are better than the other idiot sandwich. Congration.')
+                displayScore(score, float(message_received),'You are better than the other idiot sandwich. Congration.')
                 #print('You are better than the other idiot sandwich. Congration.')
                 #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
             else:
-                displayScore(score, 'You lost. Try a little harder next time would ya?')
-                print('You lost. Try a little harder next time would ya?')
-                print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
+                displayScore(score, float(message_received), 'You lost. Try a little harder next time would ya?')
+                #print('You lost. Try a little harder next time would ya?')
+                #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
             client.loop_stop()
             client.disconnect()
     elif flag_received == str(MESSAGE):
@@ -579,7 +599,7 @@ def main():
         win.blit(modimg,(0,0))
         print('Say Practice to practice and Competition to play against an opponent')
         #win.blit(intro, (0,0))
-        txt = from_speech()
+        txt = 'practice'#from_speech()
         if txt == 'brackets':  #common word
             txt = 'practice'
     ################
@@ -590,7 +610,8 @@ def main():
     #WAITING FOR OPPONENT
     #####################
     if txt.lower() == 'practice':
-        flag_player = 1
+        flag_player = 3
+        client.subscribe('2Team8A', qos = 2)
     else:
         playvid.preview()
     while(flag_player == 0):
@@ -621,7 +642,7 @@ def main():
 
     ####################
     #PLAYER LOCALIZATION
-    ####################   
+    ####################
     while(in_cooking != 2):
         print('Move left to go to the stove, Move right to go to the chopping board')
         clock = pygame.time.Clock()
@@ -629,6 +650,7 @@ def main():
         playerimg = Playerimg(100, 900 - 130)
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption('Cooking Papa 1.0')
+        st1,st2 = t.time(),t.time() #initializing timers
         while True:
             ret, frame = cap.read()
             frame = cv2.flip(frame,0)
@@ -643,13 +665,19 @@ def main():
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             if x_pos > 800:
-                position = CUTTING
-                cv2.destroyAllWindows()
-                break
-            elif x_pos < 400: 
                 position = STOVE
-                cv2.destroyAllWindows()
-                break
+                end1 = t.time()
+                if(end1-st1 >= 3):  #evaluating timers
+                    cv2.destroyAllWindows()
+                    break
+            elif x_pos < 400: 
+                position = CUTTING
+                end2 = t.time()
+                if(end2-st2 >= 3):  #evaluating timers
+                    cv2.destroyAllWindows()
+                    break
+            else:   #reset both timers in the middle
+                st1,st2 = t.time(),t.time()
     ####################
     #PLAYER LOCALIZATION
     ####################
@@ -699,7 +727,7 @@ def main():
             t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(FLAG_CUTTING, board,200, 110,msg_knife)
+            task(FLAG_CUTTING,board,200,110,msg_knife)
             last_action = int(FLAG_CUTTING)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
         in_cooking = 0
@@ -713,15 +741,19 @@ def main():
     #########
         check_game()
         print_recipes()
+        loading.preview()
     end_game = t.time()
     score = end_game-start_game
     #print('Your time was: ' + str(score))
-    displayScore(score, 'Good Job!')
+    if flag_player == 3:
+        displayScore(score,0,'Good Job!')
+        t.sleep(10)
+        client.loop_stop()
+        client.disconnect()
     client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
     #########
     #GAME END
     #########
-    print("waiting for opponent's time...")
     while True:
         pass
 
@@ -740,6 +772,11 @@ client.on_message = on_message
 # 2. connect to a broker using one of the connect*() functions.
 client.connect_async("test.mosquitto.org")
 client.loop_start()
-cap = cv2.VideoCapture(2)
-gamestart = True
+cap = cv2.VideoCapture(0)
+while gamestart != 0:
+    loading.preview()
+    t.sleep(0.6)
+fps = cap.get(cv2.CAP_PROP_FPS)
+#cam is 30fps
+cap.set(cv2.CAP_PROP_FPS, 30)
 main()

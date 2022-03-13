@@ -157,13 +157,6 @@ class Player():
 		self.jumped = False
 		self.direction = 0
 
-	def isAtBoard(self):
-		if self.rect.x > screen_width/2 and self.rect.x > 200:
-			return True
-		else:
-			return False
-
-
 	def update(self):
 		dx = 0
 		dy = 0
@@ -171,12 +164,6 @@ class Player():
 
 		#get keypresses
 		#this moves the plauyer
-		key = pygame.key.get_pressed()
-		if key[pygame.K_SPACE] and self.jumped == False:
-			self.vel_y = -15
-			self.jumped = True
-		if key[pygame.K_SPACE] == False:
-			self.jumped = False
 		#if key[pygame.K_LEFT]:
 		if (self.rect.x - x_pos) < 0:
 			#print(dx)
@@ -191,15 +178,6 @@ class Player():
 			#dx += abs(self.rect.x - x_pos)
 			self.counter += 1
 			self.direction = -1
-		if key[pygame.K_LEFT] == False and key[pygame.K_RIGHT] == False:
-			self.counter = 0
-			self.index = 0
-			if self.direction == 1:
-				self.image = self.images_right[self.index]
-			if self.direction == -1:
-				self.image = self.images_left[self.index]
-
-
 		#handle animation
 		if self.counter > walk_cooldown:
 			self.counter = 0	

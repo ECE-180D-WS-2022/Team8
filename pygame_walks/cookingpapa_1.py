@@ -48,13 +48,6 @@ class Player():
 		self.jumped = False
 		self.direction = 0
 
-	def isAtBoard(self):
-		if self.rect.x > screen_width/2 and self.rect.x > 200:
-			return True
-		else:
-			return False
-
-
 	def update(self):
 		dx = 0
 		dy = 0
