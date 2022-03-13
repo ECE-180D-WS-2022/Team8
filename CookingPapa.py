@@ -55,15 +55,6 @@ speed = 1
 current_goal = 0
 length = 0
 
-####MELISSA flags
-atStove = False
-atBoard = False
-inWorld = True
-start = False
-run = True
-doneChoppingTask = False
-doneStirringTask = False
-finishedRecipe = False
 #colors
 backgroundColor=(255, 255, 255)
 green = (2, 100,64)
@@ -79,8 +70,6 @@ x_c_1 = 0
 y_c_1 = 0
 x_c_2 = 0
 y_c_2 = 0
-lower_thresh_LED = np.array([159, 80, 200]) #RED LED
-upper_thresh_LED = np.array([180, 255, 255]) #RED LED
 counter = 0 
 x_pos  = 0
 recipe_count = 2
@@ -219,8 +208,8 @@ s21 =pygame.image.load('images/stir/s21.png')
 s22 =pygame.image.load('images/stir/s22.png')
 s23 =pygame.image.load('images/stir/s23.png')
 fire =pygame.image.load('images/stir/fire.png')
+#stirring photos
 
-intro = pygame.image.load('images/CookingPapa_intro.png')
 vs_score = pygame.image.load('images/score_page.png')
 
 poc1 = pygame.image.load('images/pour/poc1.png')
@@ -237,10 +226,17 @@ poc11 = pygame.image.load('images/pour/poc11.png')
 poc12 = pygame.image.load('images/pour/poc12.png')
 poc13 = pygame.image.load('images/pour/poc13.png')
 
+calimg = pygame.image.load('images/calibration_instructions.png')
+modimg = pygame.image.load('images/game_mode_selection.png')
+playimg = pygame.image.load('images/player_selection.png')
+play1img = pygame.image.load('images/player1_selected.png')
+play2img = pygame.image.load('images/player2_selected.png')
 #videos
 pygame.init()
 pygame.mixer.quit()
+intro = moviepy.editor.VideoFileClip('images/welcome_screen.mp4')
 loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+
 
 #fonts
 #pygame.font.init()
@@ -281,40 +277,12 @@ def get_calibration_frames(frame):
     global y_c_1
     global y_c_2
     global counter
+    x_c_1 = 200
+    x_c_2 = 400
+    y_c_1 = 250
+    y_c_2 = 495
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    lower_thresh_LED = np.array([0, 0, 250]) #LED
-    upper_thresh_LED = np.array([179, 10, 255]) #LED
-
-    mask = cv2.inRange(hsv, lower_thresh_LED, upper_thresh_LED)
-    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #cv2.imshow('calibrating frame', frame)
-    if counter == 1:
-        print('stand in middle of frame and remain still during calibration')
-    if counter == 25:
-        print('hold led near top of right shoulder')
-    for i in contours:
-        #get rid of noise first by calculating area
-        area = cv2.contourArea(i)
-        if area > 100 and area < 400:
-            #cv2.drawContours(frame, [i], -1, (0, 255, 0), 2)
-            x, y, width, height = cv2.boundingRect(i)
-            cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 3)
-            x2 = x + width
-            y2 = y + height
-            if counter == 300:
-                x_c_1 = x + (width//2)
-                y_c_1 = x + (height//2)
-                print('top right corner calibration complete')
-                print('hold led near left hip')
-            if counter == 600:
-                x_c_2 = x + (width//2)
-                y_c_2 = x + (height//2)
-                print('bottom left corner calibration complete')
-    if counter == 600 and (x_c_2-x_c_1 <= 0 or x_c_1 == 0 or x_c_2 == 0 or y_c_2-y_c_1 <= 0 or y_c_1 == 0 or y_c_2 == 0):
-        print('calibration failed...try again')
-        counter = 0
+    cv2.rectangle(frame, (x_c_1, y_c_1), (x_c_2, y_c_2), (0, 255, 0), 3)
 
 def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     global lower_thresh_player
@@ -355,13 +323,13 @@ def calibration():
     while (True):
         ret, frame = cap.read()
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        if counter <= 601:
+        if counter <= 301:
             get_calibration_frames(frame)
-        elif counter == 602:
+        elif counter == 302:
             print('calibrating...')
-            t.sleep(3)
+            t.sleep(1)
             calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2)
-        elif counter > 602:
+        elif counter > 302:
             print('exiting calibration...')
             return
         counter = counter+1
@@ -388,7 +356,7 @@ def task(action, back, x, y, msg_begin):
     
     if (string_action == 'Stir'):
         letter="s"
-    else:    
+    elif(string_action == 'Cut'):
         letter="c"
 
     speed = 1   #default
@@ -518,20 +486,6 @@ def on_connect(client, userdata, flags, rc):
 # reconnect then subscriptions will be renewed.
 # client.subscribe("ece180d/test")
 # The callback of the client when it disconnects.
-    txt = '0'
-    while(flag_player == 0):
-        print("Which player are you playing as, Player 1 or Player 2?")
-        txt = "player two"#from_speech()
-        if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
-            flag_player = 1
-            flag_opponent = 2
-        elif txt.lower() == 'player two' or txt.lower() == 'player to' or txt.lower() == 'player too' or txt.lower() == 'player 2':
-            flag_player = 2
-            flag_opponent = 1
-    client.subscribe(str(flag_player)+'Team8', qos=1)
-    #subscribing to mqtt to receive IMU data
-    #messages must only be received once hence qos is 2
-    client.subscribe(str(flag_player)+'Team8A',qos=2)
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
@@ -598,12 +552,7 @@ def main():
     #####################
     #GLOBAL DECLARATIONS
     #####################
-    win.blit(intro,(0,0))
-    pygame.display.update()
-    t.sleep(1)
-
-    while(flag_player==0): #Waiting for player selection
-        pass
+    intro.preview()
     t.sleep(1)
     print('Welcome to Cooking Papa!')
     loading.preview()
@@ -613,8 +562,8 @@ def main():
     ##################
     #CALIBRATION PHASE
     ##################
-    # calibration()
-    # cv2.destroyAllWindows()
+    calibration()
+    cv2.destroyAllWindows()
     ##################
     #CALIBRATION PHASE
     ##################
@@ -637,22 +586,26 @@ def main():
     #WAITING FOR OPPONENT
     #####################
     if txt.lower() == 'practice':
-        flag_received = 99
-    elif txt.lower() == 'fight':
-        flag_received = 0
-        client.publish(str(flag_opponent)+'Team8',str(FLAG_START)+'gamestart',qos=1)
-    while(flag_received==0):
-        pass
-    t.sleep(1)
-    client.publish(str(flag_opponent)+'Team8', str(FLAG_START)+'gamestart',qos=1)
-    r = sr.Recognizer()
-    if txt.lower() == 'practice':
-        txt = 'ready'
+        flag_player = 1
     else:
-        txt = '0'
-    while txt.lower() != 'ready':
-        print("Say Ready to begin")
+        
+    while(flag_player == 0):
+        win.blit(playimg,(0,0))
+        pygame.display.update()
+        #print("Which player are you playing as, Player 1 or Player 2?")
         txt = from_speech()
+        if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
+            flag_player = 1
+            flag_opponent = 2
+            play1img.preview()
+        elif txt.lower() == 'player two' or txt.lower() == 'player to' or txt.lower() == 'player too' or txt.lower() == 'player 2':
+            flag_player = 2
+            flag_opponent = 1
+            play2img.preview()
+    client.subscribe(str(flag_player)+'Team8', qos=1)
+    #subscribing to mqtt to receive IMU data
+    #messages must only be received once hence qos is 2
+    client.subscribe(str(flag_player)+'Team8A',qos=2)
     #####################
     #WAITING FOR OPPONENT
     #####################
@@ -673,33 +626,33 @@ def main():
     #PLAYER LOCALIZATION
     ####################   
     while(in_cooking != 2):
-        # print('Move left to go to the stove, Move right to go to the chopping board')
-        # clock = pygame.time.Clock()
-        # fps = 60
-        # playerimg = Playerimg(100, 900 - 130)
-        # screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        # pygame.display.set_caption('Cooking Papa 1.0')
-        # while True:
-        #     ret, frame = cap.read()
-        #     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        #     track_player(frame, lower_thresh_player, upper_thresh_player)
-        #     #define game variables
-        #     clock.tick(fps)
-        #     screen.blit(bg_img, (0, 0))
-        #     playerimg.update()
-        #     screen.blit(playerimg.image, playerimg.rect)
-        #     pygame.display.update()
-        #     cv2.imshow('calibrating frame', frame)
-        #     if cv2.waitKey(1) & 0xFF == ord('q'):
-        #         break
-        #     if x_pos > 1200:
-        #         position = STOVE
-        #         cv2.destroyAllWindows()
-        #         break
-        #     elif x_pos < 400: 
-        #         position = CUTTING
-        #         cv2.destroyAllWindows()
-        #         break
+        print('Move left to go to the stove, Move right to go to the chopping board')
+        clock = pygame.time.Clock()
+        fps = 60
+        playerimg = Playerimg(100, 900 - 130)
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption('Cooking Papa 1.0')
+        while True:
+            ret, frame = cap.read()
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            track_player(frame, lower_thresh_player, upper_thresh_player)
+            #define game variables
+            clock.tick(fps)
+            screen.blit(bg_img, (0, 0))
+            playerimg.update()
+            screen.blit(playerimg.image, playerimg.rect)
+            pygame.display.update()
+            cv2.imshow('calibrating frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            if x_pos > 1200:
+                position = STOVE
+                cv2.destroyAllWindows()
+                break
+            elif x_pos < 400: 
+                position = CUTTING
+                cv2.destroyAllWindows()
+                break
     ####################
     #PLAYER LOCALIZATION
     ####################
