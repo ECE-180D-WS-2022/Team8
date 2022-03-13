@@ -281,40 +281,12 @@ def get_calibration_frames(frame):
     global y_c_1
     global y_c_2
     global counter
+    x_c_1 = 200
+    x_c_2 = 400
+    y_c_1 = 250
+    y_c_2 = 495
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    lower_thresh_LED = np.array([0, 0, 250]) #LED
-    upper_thresh_LED = np.array([179, 10, 255]) #LED
-
-    mask = cv2.inRange(hsv, lower_thresh_LED, upper_thresh_LED)
-    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #cv2.imshow('calibrating frame', frame)
-    if counter == 1:
-        print('stand in middle of frame and remain still during calibration')
-    if counter == 25:
-        print('hold led near top of right shoulder')
-    for i in contours:
-        #get rid of noise first by calculating area
-        area = cv2.contourArea(i)
-        if area > 100 and area < 400:
-            #cv2.drawContours(frame, [i], -1, (0, 255, 0), 2)
-            x, y, width, height = cv2.boundingRect(i)
-            cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 3)
-            x2 = x + width
-            y2 = y + height
-            if counter == 300:
-                x_c_1 = x + (width//2)
-                y_c_1 = x + (height//2)
-                print('top right corner calibration complete')
-                print('hold led near left hip')
-            if counter == 600:
-                x_c_2 = x + (width//2)
-                y_c_2 = x + (height//2)
-                print('bottom left corner calibration complete')
-    if counter == 600 and (x_c_2-x_c_1 <= 0 or x_c_1 == 0 or x_c_2 == 0 or y_c_2-y_c_1 <= 0 or y_c_1 == 0 or y_c_2 == 0):
-        print('calibration failed...try again')
-        counter = 0
+    cv2.rectangle(frame, (x_c_1, y_c_1), (x_c_2, y_c_2), (0, 255, 0), 3)
 
 def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     global lower_thresh_player
@@ -348,6 +320,7 @@ def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     lower_thresh_player = np.array([int(avg_h)-30,int(avg_s)-40,int(avg_v)-40])
     upper_thresh_player = np.array([int(avg_h)+30,int(avg_s)+100,int(avg_v)+100])
 
+
 def calibration():
     global counter
     global lower_thresh_player
@@ -355,13 +328,13 @@ def calibration():
     while (True):
         ret, frame = cap.read()
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        if counter <= 601:
+        if counter <= 301:
             get_calibration_frames(frame)
-        elif counter == 602:
+        elif counter == 302:
             print('calibrating...')
-            t.sleep(3)
+            t.sleep(1)
             calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2)
-        elif counter > 602:
+        elif counter > 302:
             print('exiting calibration...')
             return
         counter = counter+1
