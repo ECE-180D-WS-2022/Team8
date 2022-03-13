@@ -430,6 +430,17 @@ def displayScore(score, feedback):
     win.blit(msg_feedback, (350,400))
     pygame.display.update()
 
+def pourCarrots():
+    for i in range(1,14):
+       # print('it:'+str(it))
+        t.sleep(0.1)
+        win.blit(bg_stove, (0, 0))
+        win.blit(s1, (340, 220))
+	    #draw progress bar outline
+        pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
+        var_name1 = "poc"+str(i)
+        win.blit(globals()[var_name1], (450, 50))
+        pygame.display.update()
 
 def check_game():
     global all_recipes
@@ -692,6 +703,7 @@ def main():
         in_cooking = 1
         if position == STOVE:
             #ask IMU for stove classifier data
+            pourCarrots()
             drawBackground(bg_stove, s1, 340, 220, msg_spoon)
             txt = '0'
             while txt.lower() == 'spoon':
