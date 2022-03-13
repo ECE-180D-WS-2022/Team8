@@ -9,11 +9,13 @@ import speech_recognition as sr
 import random
 import numpy as np
 import pygame
+from pygame import movie
 from pygame.locals import *
 import cv2
+import moviepy.editor
 
-GOAL_STIR = 5
-GOAL_CUTTING = 5
+GOAL_STIR = 23
+GOAL_CUTTING = 27
 TOTAL_CUTTING = 1
 TOTAL_STOVE = 1
 CONTROLLER_BUFFER = 3
@@ -52,6 +54,23 @@ message_received = ''
 speed = 1
 current_goal = 0
 length = 0
+
+####MELISSA flags
+atStove = False
+atBoard = False
+inWorld = True
+start = False
+run = True
+doneChoppingTask = False
+doneStirringTask = False
+finishedRecipe = False
+#colors
+backgroundColor=(255, 255, 255)
+green = (2, 100,64)
+black = (0,0,0)
+#window
+windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
+win=pygame.display.set_mode(windowsize)
 
 #Vision processing code 
 cap = cv2.VideoCapture(2)
@@ -138,46 +157,99 @@ class Playerimg():
 
 #set title on window
 pygame.display.set_caption("Chopping") 
-#look in same folder as script for images
-c1 =pygame.image.load('choppingcarrot/c1.png')
-c2 =pygame.image.load('choppingcarrot/c2.png')
-c3 =pygame.image.load('choppingcarrot/c3.png')
-c4 =pygame.image.load('choppingcarrot/c4.png')
-c5 =pygame.image.load('choppingcarrot/c5.png')
-c6 =pygame.image.load('choppingcarrot/c6.png')
-c7 =pygame.image.load('choppingcarrot/c7.png')
-c8 =pygame.image.load('choppingcarrot/c8.png')
-c9 =pygame.image.load('choppingcarrot/c9.png')
-c10 =pygame.image.load('choppingcarrot/c10.png')
-c11 =pygame.image.load('choppingcarrot/c11.png')
-c12 =pygame.image.load('choppingcarrot/c12.png')
-c13 =pygame.image.load('choppingcarrot/c13.png')
-c14 =pygame.image.load('choppingcarrot/c14.png')
-c15 =pygame.image.load('choppingcarrot/c15.png')
-c16 =pygame.image.load('choppingcarrot/c16.png')
-c17 =pygame.image.load('choppingcarrot/c17.png')
-c18 =pygame.image.load('choppingcarrot/c18.png')
-c19 =pygame.image.load('choppingcarrot/c19.png')
-c20 =pygame.image.load('choppingcarrot/c20.png')
-c21 =pygame.image.load('choppingcarrot/c21.png')
-c22 =pygame.image.load('choppingcarrot/c22.png')
-c23 =pygame.image.load('choppingcarrot/c23.png')
-c24 =pygame.image.load('choppingcarrot/c24.png')
-c25 =pygame.image.load('choppingcarrot/c25.png')
-c26 =pygame.image.load('choppingcarrot/c26.png')
-c27 =pygame.image.load('choppingcarrot/c27.png')
-#knife = pygame.transform.scale(knife, (250, 220))
-board=pygame.image.load('cuttingboard2.png')
-#board = pygame.transform.scale(board, (300, 320))
-bg_img = pygame.image.load('img/background.png')
-bg_img = pygame.transform.scale(bg_img, (1200, 900))
-bg_chopping = pygame.image.load('img/chopping.png')
-bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
-bg_stove = pygame.image.load('img/stove.png')
-bg_stove = pygame.transform.scale(bg_stove, (1200, 900))
 
-pygame.font.init()
-myfont = pygame.font.SysFont('Comic Sans MS', 40)
+#load images
+bg_img = pygame.image.load('images/kitchen_half.png')
+bg_img = pygame.transform.scale(bg_img, (1200, 900))
+bg_chopping = pygame.image.load('images/chopping.png')
+bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
+bg_stove = pygame.image.load('images/stir/background2.png')
+
+c1 =pygame.image.load('images/choppingcarrot_resize/cc1.png')
+c2 =pygame.image.load('images/choppingcarrot_resize/cc2.png')
+c3 =pygame.image.load('images/choppingcarrot_resize/cc3.png')
+c4 =pygame.image.load('images/choppingcarrot_resize/cc4.png')
+c5 =pygame.image.load('images/choppingcarrot_resize/cc5.png')
+c6 =pygame.image.load('images/choppingcarrot_resize/cc6.png')
+c7 =pygame.image.load('images/choppingcarrot_resize/cc7.png')
+c8 =pygame.image.load('images/choppingcarrot_resize/cc8.png')
+c9 =pygame.image.load('images/choppingcarrot_resize/cc9.png')
+c10 =pygame.image.load('images/choppingcarrot_resize/cc10.png')
+c11 =pygame.image.load('images/choppingcarrot_resize/cc11.png')
+c12 =pygame.image.load('images/choppingcarrot_resize/cc12.png')
+c13 =pygame.image.load('images/choppingcarrot_resize/cc13.png')
+c14 =pygame.image.load('images/choppingcarrot_resize/cc14.png')
+c15 =pygame.image.load('images/choppingcarrot_resize/cc15.png')
+c16 =pygame.image.load('images/choppingcarrot_resize/cc16.png')
+c17 =pygame.image.load('images/choppingcarrot_resize/cc17.png')
+c18 =pygame.image.load('images/choppingcarrot_resize/cc18.png')
+c19 =pygame.image.load('images/choppingcarrot_resize/cc19.png')
+c20 =pygame.image.load('images/choppingcarrot_resize/cc20.png')
+c21 =pygame.image.load('images/choppingcarrot_resize/cc21.png')
+c22 =pygame.image.load('images/choppingcarrot_resize/cc22.png')
+c23 =pygame.image.load('images/choppingcarrot_resize/cc23.png')
+c24 =pygame.image.load('images/choppingcarrot_resize/cc24.png')
+c25 =pygame.image.load('images/choppingcarrot_resize/cc25.png')
+c26 =pygame.image.load('images/choppingcarrot_resize/cc26.png')
+c27 =pygame.image.load('images/choppingcarrot_resize/cc27.png')
+board=pygame.image.load('images\cuttingboard3.png')
+
+#stirring photos
+s1 =pygame.image.load('images/stir/s1.png')
+s2 =pygame.image.load('images/stir/s2.png')
+s3 =pygame.image.load('images/stir/s3.png')
+s4 =pygame.image.load('images/stir/s4.png')
+s5 =pygame.image.load('images/stir/s5.png')
+s6 =pygame.image.load('images/stir/s6.png')
+s7 =pygame.image.load('images/stir/s7.png')
+s8 =pygame.image.load('images/stir/s8.png')
+s9 =pygame.image.load('images/stir/s9.png')
+s10 =pygame.image.load('images/stir/s10.png')
+s11 =pygame.image.load('images/stir/s11.png')
+s12 =pygame.image.load('images/stir/s12.png')
+s13 =pygame.image.load('images/stir/s13.png')
+s14 =pygame.image.load('images/stir/s14.png')
+s15 =pygame.image.load('images/stir/s15.png')
+s16 =pygame.image.load('images/stir/s16.png')
+s17 =pygame.image.load('images/stir/s17.png')
+s18 =pygame.image.load('images/stir/s18.png')
+s19 =pygame.image.load('images/stir/s19.png')
+s20 =pygame.image.load('images/stir/s20.png')
+s21 =pygame.image.load('images/stir/s21.png')
+s22 =pygame.image.load('images/stir/s22.png')
+s23 =pygame.image.load('images/stir/s23.png')
+fire =pygame.image.load('images/stir/fire.png')
+
+intro = pygame.image.load('images/CookingPapa_intro.png')
+vs_score = pygame.image.load('images/score_page.png')
+
+poc1 = pygame.image.load('images/pour/poc1.png')
+poc2 = pygame.image.load('images/pour/poc2.png')
+poc3 = pygame.image.load('images/pour/poc3.png')
+poc4 = pygame.image.load('images/pour/poc4.png')
+poc5 = pygame.image.load('images/pour/poc5.png')
+poc6 = pygame.image.load('images/pour/poc6.png')
+poc7 = pygame.image.load('images/pour/poc8.png')
+poc8 = pygame.image.load('images/pour/poc8.png')
+poc9 = pygame.image.load('images/pour/poc9.png')
+poc10 = pygame.image.load('images/pour/poc10.png')
+poc11 = pygame.image.load('images/pour/poc11.png')
+poc12 = pygame.image.load('images/pour/poc12.png')
+poc13 = pygame.image.load('images/pour/poc13.png')
+
+#videos
+pygame.init()
+pygame.mixer.quit()
+loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+
+#fonts
+#pygame.font.init()
+myfont = pygame.font.SysFont('Arial', 40)
+msg_spoon= myfont.render('Say spoon to start', False, (0,0,0))
+msg_knife= myfont.render('Say knife to start', False, (0,0,0))
+msg_good = myfont.render('Good job!', False, (0,0,0))
+smallFont = pygame.font.SysFont('Arial', 30)
+completion= smallFont.render('You have completed this task!', False, (0,0,0))
 
 #vision processing code
 
@@ -300,25 +372,81 @@ def calibration():
 
 #vision processing code
 
-def task(action):
+def progressBarChops(current, total):
+    #increment progress bar
+    pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
+    #increment progress bars
+    x = round(current/total*10)
+    for t in range(0,x):
+        pygame.draw.rect(win, green, pygame.Rect(350+(50*t), 821, 48, 28) )
+
+def task(action, back, x, y, msg_begin):
     global speed
     global current_goal
     action = int(action)
     string_action = classifier(action)
+    
+    if (string_action == 'Stir'):
+        letter="s"
+    else:    
+        letter="c"
+
     speed = 1   #default
     i = 0
-    windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
-    win=pygame.display.set_mode(windowsize)
+    ##windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
+    ##win=pygame.display.set_mode(windowsize)
+    drawBackground(back, globals()[letter+'1'], x, y, msg_begin)
     while (current_goal > i):
         i = i + speed
-        t.sleep(1)
+        t.sleep(0.01)
         print (speed)
-        win.blit(board, (300, 110))
-        var_name2 = "c"+str(i)
+        win.blit(back, (0, 0))
+        var_name2 = letter+str(i)
         #print(var_name2)
-        win.blit(globals()[var_name2], (300, 110))
+        win.blit(globals()[var_name2], (x, y))
+        progressBarChops(i, current_goal)
         pygame.display.update()
+    
+
+    taskCompleted(back, globals()[letter+str(current_goal)], x, y, completion)
+
+    t.sleep(1)
     return
+
+def drawBackground(back, action_frame, coord_x, coord_y, msg):
+    win.fill(backgroundColor)
+    win.blit(back, (0, 0))
+    win.blit(action_frame, (coord_x, coord_y))
+    win.blit(msg, (200,50))
+	 #draw progress bar outline
+    pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
+    pygame.display.update()
+
+def taskCompleted(backdrop, action_frame, coord_x, coord_y, msg):
+    drawBackground(backdrop, action_frame, coord_x, coord_y, msg)
+    progressBarChops(1, 1)
+    pygame.display.update()
+
+def displayScore(score, feedback):
+    msg_score= myfont.render(str(round(score)), False, (0,0,0))
+    msg_feedback= myfont.render(feedback, False, (0,0,0))
+    str(round(score))
+    win.blit(vs_score, (0,0))
+    win.blit(msg_score, (900,670))
+    win.blit(msg_feedback, (350,400))
+    pygame.display.update()
+
+def pourCarrots():
+    for i in range(1,14):
+       # print('it:'+str(it))
+        t.sleep(0.1)
+        win.blit(bg_stove, (0, 0))
+        win.blit(s1, (340, 220))
+	    #draw progress bar outline
+        pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
+        var_name1 = "poc"+str(i)
+        win.blit(globals()[var_name1], (450, 50))
+        pygame.display.update()
 
 def check_game():
     global all_recipes
@@ -393,7 +521,7 @@ def on_connect(client, userdata, flags, rc):
     txt = '0'
     while(flag_player == 0):
         print("Which player are you playing as, Player 1 or Player 2?")
-        txt = from_speech()
+        txt = "player two"#from_speech()
         if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
             flag_player = 1
             flag_opponent = 2
@@ -431,9 +559,11 @@ def on_message(client, userdata, message):
     elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
             if 1000-float(score) > 1000-float(message_received):
-                print('You are better than the other idiot sandwich. Congration.')
-                print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
+                displayScore(score, 'You are better than the other idiot sandwich. Congration.')
+                #print('You are better than the other idiot sandwich. Congration.')
+                #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
             else:
+                displayScore(score, 'You lost. Try a little harder next time would ya?')
                 print('You lost. Try a little harder next time would ya?')
                 print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
             client.loop_stop()
@@ -468,17 +598,23 @@ def main():
     #####################
     #GLOBAL DECLARATIONS
     #####################
-    
+    win.blit(intro,(0,0))
+    pygame.display.update()
+    t.sleep(1)
+
     while(flag_player==0): #Waiting for player selection
         pass
     t.sleep(1)
     print('Welcome to Cooking Papa!')
+    loading.preview()
+    t.sleep(3)
+    #
 
     ##################
     #CALIBRATION PHASE
     ##################
-    calibration()
-    cv2.destroyAllWindows()
+    # calibration()
+    # cv2.destroyAllWindows()
     ##################
     #CALIBRATION PHASE
     ##################
@@ -489,7 +625,8 @@ def main():
     txt = '0'
     while txt.lower() != 'practice' and txt.lower() != 'fight':
         print('Say Practice to practice and Fight to play against an opponent')
-        txt = from_speech()
+        #win.blit(intro, (0,0))
+        txt = "practice"#from_speech()
         if txt == 'brackets':  #common word
             txt = 'practice'
     ################
@@ -536,43 +673,45 @@ def main():
     #PLAYER LOCALIZATION
     ####################   
     while(in_cooking != 2):
-        print('Move left to go to the stove, Move right to go to the chopping board')
-        clock = pygame.time.Clock()
-        fps = 60
-        playerimg = Playerimg(100, 900 - 130)
-        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption('Cooking Papa 1.0')
-        while True:
-            ret, frame = cap.read()
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            track_player(frame, lower_thresh_player, upper_thresh_player)
-            #define game variables
-            clock.tick(fps)
-            screen.blit(bg_img, (0, 0))
-            playerimg.update()
-            screen.blit(playerimg.image, playerimg.rect)
-            pygame.display.update()
-            cv2.imshow('calibrating frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-            if x_pos > 1200:
-                position = STOVE
-                cv2.destroyAllWindows()
-                break
-            elif x_pos < 400: 
-                position = CUTTING
-                cv2.destroyAllWindows()
-                break
+        # print('Move left to go to the stove, Move right to go to the chopping board')
+        # clock = pygame.time.Clock()
+        # fps = 60
+        # playerimg = Playerimg(100, 900 - 130)
+        # screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        # pygame.display.set_caption('Cooking Papa 1.0')
+        # while True:
+        #     ret, frame = cap.read()
+        #     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        #     track_player(frame, lower_thresh_player, upper_thresh_player)
+        #     #define game variables
+        #     clock.tick(fps)
+        #     screen.blit(bg_img, (0, 0))
+        #     playerimg.update()
+        #     screen.blit(playerimg.image, playerimg.rect)
+        #     pygame.display.update()
+        #     cv2.imshow('calibrating frame', frame)
+        #     if cv2.waitKey(1) & 0xFF == ord('q'):
+        #         break
+        #     if x_pos > 1200:
+        #         position = STOVE
+        #         cv2.destroyAllWindows()
+        #         break
+        #     elif x_pos < 400: 
+        #         position = CUTTING
+        #         cv2.destroyAllWindows()
+        #         break
     ####################
     #PLAYER LOCALIZATION
     ####################
-    
+        position = random.randint(2,3)
     ###############
     #PLAYER ACTIONS
     ###############
         in_cooking = 1
         if position == STOVE:
             #ask IMU for stove classifier data
+            pourCarrots()
+            drawBackground(bg_stove, s1, 340, 220, msg_spoon)
             txt = '0'
             while txt.lower() == 'spoon':
                 print("Say 'spoon' to start stirring")
@@ -591,12 +730,13 @@ def main():
             t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(FLAG_STIR)
+            task(FLAG_STIR, bg_stove,340, 220, msg_spoon)
             last_action = int(FLAG_STIR)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
 
         elif position == CUTTING:
             #ask IMU for cutting classifier data
+            drawBackground(board, c1, 200, 110, msg_knife)
             txt = '0'
             while txt.lower() == 'knife':
                 print("Say knife to start cutting")
@@ -609,7 +749,7 @@ def main():
             t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(FLAG_CUTTING)
+            task(FLAG_CUTTING, board,200, 110,msg_knife)
             last_action = int(FLAG_CUTTING)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
         in_cooking = 0
@@ -625,7 +765,8 @@ def main():
         print_recipes()
     end_game = t.time()
     score = end_game-start_game
-    print('Your time was: ' + str(score))
+    #print('Your time was: ' + str(score))
+    displayScore(score, 'Good Job!')
     client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
     #########
     #GAME END
@@ -650,3 +791,5 @@ client.on_message = on_message
 client.connect_async("test.mosquitto.org")
 client.loop_start()
 main()
+
+
