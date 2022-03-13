@@ -220,7 +220,7 @@ fire =pygame.image.load('images/stir/fire.png')
 
 intro = pygame.image.load('images/CookingPapa_intro.png')
 recipes = pygame.image.load('images/CookingPapa_recipeS.png')
-vs_score = pygame.image.load('images/scorepage.png')
+vs_score = pygame.image.load('images/scorepage2.png')
 
 poc1 = pygame.image.load('images/pour/poc1.png')
 poc2 = pygame.image.load('images/pour/poc2.png')
@@ -368,72 +368,67 @@ def calibration():
 
 def progressBarChops(current, total):
     #increment progress bar
-    pygame.draw.rect(win, black, pygame.Rect(349, 720, 500, 30),2 )
+    pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
     #increment progress bars
     x = round(current/total*10)
     for t in range(0,x):
-        pygame.draw.rect(win, green, pygame.Rect(350+(50*t), 721, 48, 28) )
+        pygame.draw.rect(win, green, pygame.Rect(350+(50*t), 821, 48, 28) )
 
-def task(action, x, y):
+def task(action, back, x, y, msg_begin):
     global speed
     global current_goal
     action = int(action)
     string_action = classifier(action)
     
     if (string_action == 'Stir'):
-        letter='s'
+        letter="s"
     else:    
-        letter='c'
+        letter="c"
 
     speed = 1   #default
     i = 0
     ##windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
     ##win=pygame.display.set_mode(windowsize)
-    win.fill(backgroundColor)
+    drawBackground(back, globals()[letter+'1'], x, y, msg_begin)
     while (current_goal > i):
         i = i + speed
-        t.sleep(0.2)
+        t.sleep(0.01)
         print (speed)
-        win.blit(board, (0, 0))
+        win.blit(back, (0, 0))
         var_name2 = letter+str(i)
         #print(var_name2)
         win.blit(globals()[var_name2], (x, y))
         progressBarChops(i, current_goal)
         pygame.display.update()
     
-    t.sleep(3)
-    if (letter=='c'):
-        taskCompleted('board', 'c1', x, y, completion)
-        #200, 110
-        #340 220
-    else:
-        taskCompleted('bg_stove', 's1', x, y, completion)
+
+    taskCompleted(back, globals()[letter+str(current_goal)], x, y, completion)
+
+    t.sleep(1)
     return
 
-def drawBackground(backdrop, action_frame, coord_x, coord_y, msg):
-    back=globals()[backdrop]
-    action_f=globals()[action_frame]
+def drawBackground(back, action_frame, coord_x, coord_y, msg):
     win.fill(backgroundColor)
     win.blit(back, (0, 0))
-    win.blit(action_f, (coord_x, coord_y))
+    win.blit(action_frame, (coord_x, coord_y))
     win.blit(msg, (200,50))
 	 #draw progress bar outline
-    pygame.draw.rect(win, black, pygame.Rect(349, 720, 500, 30),2 )
+    pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
     pygame.display.update()
-
-#chopping background: drawBackground('board', 'c1', 200, 110, msg_knife)
-#stirring background: drawBackground('bg_stove', 's1', 340, 220, msg_spoon)
 
 def taskCompleted(backdrop, action_frame, coord_x, coord_y, msg):
     drawBackground(backdrop, action_frame, coord_x, coord_y, msg)
     progressBarChops(1, 1)
     pygame.display.update()
 
-def displayScore(score, msg_feedback):
-    msg_score=globals()[score]
+def displayScore(score, feedback):
+    msg_score= myfont.render(str(round(score)), False, (0,0,0))
+    msg_feedback= myfont.render(feedback, False, (0,0,0))
+    str(round(score))
     win.blit(vs_score, (0,0))
     win.blit(msg_score, (900,670))
     win.blit(msg_feedback, (350,400))
+    pygame.display.update()
 
 
 def check_game():
@@ -697,6 +692,7 @@ def main():
         in_cooking = 1
         if position == STOVE:
             #ask IMU for stove classifier data
+            drawBackground(bg_stove, s1, 340, 220, msg_spoon)
             txt = '0'
             while txt.lower() == 'spoon':
                 print("Say 'spoon' to start stirring")
@@ -715,12 +711,13 @@ def main():
             t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(FLAG_STIR, 340, 220)
+            task(FLAG_STIR, bg_stove,340, 220, msg_spoon)
             last_action = int(FLAG_STIR)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
 
         elif position == CUTTING:
             #ask IMU for cutting classifier data
+            drawBackground(board, c1, 200, 110, msg_knife)
             txt = '0'
             while txt.lower() == 'knife':
                 print("Say knife to start cutting")
@@ -733,7 +730,7 @@ def main():
             t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             print('starting')
-            task(FLAG_CUTTING, 200, 110)
+            task(FLAG_CUTTING, board,200, 110,msg_knife)
             last_action = int(FLAG_CUTTING)
             client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
         in_cooking = 0
@@ -750,7 +747,7 @@ def main():
     end_game = t.time()
     score = end_game-start_game
     #print('Your time was: ' + str(score))
-    displayScore(score, 'Loading...')
+    displayScore(score, 'Good Job!')
     client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
     #########
     #GAME END
