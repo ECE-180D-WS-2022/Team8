@@ -1,4 +1,12 @@
-ls
+'''
+	Audio processing and .wav conversion source code taken from:
+		https://github.com/180D-FW-2020/Team2/blob/master/MQTT/sub.py
+		https://realpython.com/playing-and-recording-sound-python/
+		https://stackoverflow.com/questions/48427361/send-audio-file-with-paho-mqtt
+
+	PyAudio and Google Speech Recognition source code taken from:
+		https://github.com/Uberi/speech_recognition
+'''
 import pyaudio
 import wave
 import soundfile as sf

@@ -1,6 +1,8 @@
 '''
         Read Gyro and Accelerometer by Interfacing Raspberry Pi with MPU6050 using Python
         http://www.electronicwings.com
+
+	MQTT code obtained from ECE 180DA lab manual
 '''
 
 import smbus2 as smbus                  #import SMBus module of I2C
