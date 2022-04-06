@@ -10,7 +10,9 @@
 import pyaudio
 import wave
 import soundfile as sf
+#print('11111111111111111111111111111111')
 import paho.mqtt.client as mqtt
+#from playsound import playsound
 #import speech_recognition as sr
 
 def on_connect(client, userdata, flags, rc):
@@ -47,8 +49,9 @@ client.loop_start()
 chunk = 1024	#record in c hunks of 1024 samples
 sample_format = pyaudio.paInt16	#16 bits per sample
 channels = 1
-#fs = 44100	#record at 44100 samples/second
-fs = 24000
+fs = 44100	#record at 44100 samples/second
+#fs = 24000
+#fs = 8000
 seconds = 3
 filename = 'test.wav'
 
@@ -60,7 +63,7 @@ stream = p.open(format = sample_format, channels = channels, rate = fs, frames_p
 frames = []	#Array to store frames
 #Store data in chunks for 3 seconds
 for i in range(0, int(fs/chunk*seconds)):
-	data = stream.read(chunk)
+	data = stream.read(chunk, exception_on_overflow = False)
 	frames.append(data)
 
 #stop and close stream
@@ -78,12 +81,14 @@ wf.setframerate(fs)
 wf.writeframes(b''.join(frames))
 wf.close()
 
+#playsound('test.wav')	#listen to what was just recorded for testing
+
 f = open("test.wav", "rb")
 imagestring = f.read()
 f.close()
 byteArray = bytearray(imagestring)
 
-mqttc.publish('2Team8A', byteArray)
+client.publish('2Team8A', byteArray)
 
 client.loop_stop()
 client.disconnect()
