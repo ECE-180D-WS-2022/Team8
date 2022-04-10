@@ -10,7 +10,6 @@
 import pyaudio
 import wave
 import soundfile as sf
-#print('11111111111111111111111111111111')
 import paho.mqtt.client as mqtt
 #from playsound import playsound
 #import speech_recognition as sr

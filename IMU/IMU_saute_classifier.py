@@ -27,9 +27,9 @@ Ax_arr = []
 COUNTER_THRESH = 40
 
 SAUTE_SENSITIVITY_SCALING = 0
-SAUTE_THRESH = 1.1
-GOOD_SAUTE_THRESH = 2
-DECENT_SAUTE_THRESH = 4
+SAUTE_THRESH = 1.5
+GOOD_SAUTE_THRESH = 3
+DECENT_SAUTE_THRESH = 8
 
 for i in range(COUNTER_THRESH):
 	Gz_arr.append(i)
@@ -134,14 +134,15 @@ while True:
 		min_Gz = min(Gz_arr)
 		min_Gy = min(Gy_arr)
 		min_Gx = min(Gx_arr)
-
+		'''
+		
 		max_Az = max(Az_arr)
 		max_Ay = max(Ay_arr)
 		max_Ax = max(Ax_arr)
 		min_Az = min(Az_arr)
 		min_Ay = min(Ay_arr)
 		min_Ax = min(Ax_arr)
-		'''
+
 		avg_Gx = sum(Gx_arr) / len(Gx_arr)
 		avg_Gy = sum(Gy_arr) / len(Gy_arr)
 		avg_Gz = sum(Gz_arr) / len(Gz_arr)
@@ -151,10 +152,11 @@ while True:
 		avg_Az = sum(Az_arr) / len(Az_arr)
 
 		#Correct side currently pointing down
-		if ((abs(Az) > abs(Ax)-SAUTE_SENSITIVITY_SCALING and abs(Az) > abs(Ay)-SAUTE_SENSITIVITY_SCALING) or (abs(Az) <= abs(Ax)+SAUTE_SENSITIVITY_SCALING and abs(Az) <= abs(Ay)+SAUTE_SENSITIVITY_SCALING and abs(Gx) > 3)):	
+		if abs(Az) > abs(Ax)-SAUTE_SENSITIVITY_SCALING and abs(Az) > abs(Ay)-SAUTE_SENSITIVITY_SCALING:	
 			#print('correct side down')
-			if abs(avg_Gx) > (abs(avg_Gy)+SAUTE_THRESH) and abs(avg_Gx) > (abs(avg_Gz)+SAUTE_THRESH):	#chopping motion (up and down) detected
-				#print('saute detected')
+			if abs(max_Ay) + abs(min_Ay) > SAUTE_THRESH and avg_Az > 1.1 and avg_Az < 1.3:
+			#if abs(avg_Gx) > (abs(avg_Gy)+SAUTE_THRESH) and abs(avg_Gx) > (abs(avg_Gz)+SAUTE_THRESH):
+				print('saute detected')
 				if abs(avg_Gy) < GOOD_SAUTE_THRESH and abs(avg_Gz) < GOOD_SAUTE_THRESH:
 					#print('good chopping')
 					print('3')

@@ -19,10 +19,16 @@ counter =  0
 Gx_arr = []
 Gz_arr = []
 Gy_arr = []
-
 Az_arr = []
 Ay_arr = []
 Ax_arr = []
+
+Gx_roll_arr = []
+Gz_roll_arr = []
+Gy_roll_arr = []
+Az_roll_arr = []
+Ay_roll_arr = []
+Ax_roll_arr = []
 
 #GLOBAL CONSTANTS
 CHOP_SENSITIVITY_SCALING = 0
@@ -36,6 +42,16 @@ TOP_STIR_SPEED_THRESH = 9
 BOT_STIR_SPEED_THRESH = 3
 DEC_TOP_STIR_SPEED_THRESH = 11
 DEC_BOT_STIR_SPEED_THRESH = 1
+
+ROLL_COUNTER_THRESH = 40	#more values taken because want to slow down movement of rolling
+ROLL_SENSITIVITY_SCALING = 0
+AY_ROLL_THRESH = 0.4		#avg_Ay must be smaller than this value
+AZ_ROLL_THRESH_BOT = 0.2	#max - min Az must be larger than this value to register
+AZ_ROLL_THRESH_TOP = 0.7	#max - min Az must be smaller than this value to register
+GOOD_ROLL_THRESH = 1
+DECENT_ROLL_THRESH = 4
+
+pour_status_flag = 0	#0 means start pouring, 1 means in process of pouring, 2 means finished pouring, 3 means finished action
 
 # 0. define callbacks - functions that run when events happen.
 # The callback for when the client receives a CONNACK response from the server.
@@ -128,6 +144,15 @@ for i in range(COUNTER_THRESH):
 	Ay_arr.append(i)
 	Ax_arr.append(i)
 
+for i in range(ROLL_COUNTER_THRESH)
+	Gx_roll_arr.append(i)
+	Gy_roll_arr.append(i)
+	Gz_roll_arr.append(i)
+	Ax_roll_arr.append(i)
+	Ay_roll_arr.append(i)
+	Az_roll_arr.append(i)
+
+
 while True:	#continuously loop, even if don't need to collect data
 	while op_status != '00':        #runs when op_status != -1. Perform operation set by op_status
 		#Read Accelerometer raw value
@@ -213,6 +238,73 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 					'''
 				counter = 0	#reset counter after operation with memory
+		elif op_status == '04'	#roll
+			Gz_stir_arr[counter] = Gz
+			Gy_stir_arr[counter] = Gy
+			Gx_stir_arr[counter] = Gx
+			Az_stir_arr[counter] = Az
+			Ay_stir_arr[counter] = Ay
+			Ax_stir_arr[counter] = Ax
+			counter+=1
+			if (counter == ROLL_COUNTER_THRESH):
+				max_Gz = max(Gz_roll_arr)
+				max_Gy = max(Gy_roll_arr)
+				max_Gx = max(Gx_roll_arr)
+				min_Gz = min(Gz_roll_arr)
+				min_Gy = min(Gy_roll_arr)
+				min_Gx = min(Gx_roll_arr)
+
+				max_Az = max(Az_roll_arr)
+				max_Ay = max(Ay_roll_arr)
+				max_Ax = max(Ax_roll_arr)
+				min_Az = min(Az_roll_arr)
+				min_Ay = min(Ay_roll_arr)
+				min_Ax = min(Ax_roll_arr)
+
+				avg_Gx = sum(Gx_roll_arr) / len(Gx_roll_arr)
+				avg_Gy = sum(Gy_roll_arr) / len(Gy_roll_arr)
+				avg_Gz = sum(Gz_roll_arr) / len(Gz_roll_arr)
+	
+				avg_Ax = sum(Ax_roll_arr) / len(Ax_roll_arr)
+				avg_Ay = sum(Ay_roll_arr) / len(Ay_roll_arr)
+				avg_Az = sum(Az_roll_arr) / len(Az_roll_arr)
+
+				#Correct side currently pointing down
+				if ((abs(Ax) > abs(Ay)-ROLL_SENSITIVITY_SCALING and abs(Ax) > abs(Az)-ROLL_SENSITIVITY_SCALING) or (abs(Ax) <= abs(Ay)+ROLL_SENSITIVITY_SCALING and abs(Ax) <= abs(Az)+ROLL_SENSITIVITY_SCALING and abs(Gz) > 3)):
+				#print('correct side down')
+					if (max_Az - min_Az) > AZ_ROLL_THRESH_BOT and (max_Az - min_Az) < AZ_ROLL_THRESH_TOP and avg_Ay < AY_ROLL_THRESH:
+					#print('rolling')
+						if avg_Gx < GOOD_ROLL_THRESH and avg_Gy < GOOD_ROLL_THRESH and avg_Gz < GOOD_ROLL_THRESH:
+							curr_score = 3
+						elif avg_Gx < DECENT_ROLL_THRESH and avg_Gy < DECENT_ROLL_THRESH and avg_Gz < DECENT_ROLL_THRESH:
+							curr_score = 2
+					else:
+						curr_score = 1
+				counter = 0
+		elif op_status == '05'	#pour
+			if (pour_status_flag == 0):	#before start pouring, setup
+				if (Ax < 1.3 and Ax > 0.99):	#Ax correctly facing down
+					curr_score = 0	#for pour, return 0 when finished with setup stage
+					total_Ax = total_Ax + Ax
+			elif (pour_status_flag == 1):
+				if (Az > -1 and Az < -0.8):	#-Az correctly facing down
+					curr_score = 1	#return 1 when finished with stage 1
+					total_Az = total_Az + Az
+			elif (pour_status_flag == 2):
+				if (Ax < 1.3 and Ax > 0.99):	#Ax returned to original position
+					curr_score = 2	#return 2 when finished with stage 2
+					total_Ax = total_Ax + Ax
+
+			if (total_Ax >= goal_Ax_before and pour_status_flag == 0):	#start actual pouring process
+				#print('stat 1')
+				pour_status_flag = 1
+			elif (total_Az <= goal_Az and pour_status_flag == 1):	#finish up actual pouring process
+				#print('stat 2')
+				pour_status_flag = 2
+				total_Ax = 0
+			elif (total_Ax >= goal_Ax_after and pour_status_flag == 2):	#finish up motion
+				curr_score = 3	#return 3 when action completely finished
+
 
 		if prev_score != curr_score:	#when see a new score, send update to CPU
 			prev_score = curr_score
