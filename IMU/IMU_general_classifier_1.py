@@ -9,9 +9,13 @@ import smbus2 as smbus                  #import SMBus module of I2C
 from time import sleep          #import
 import time
 import paho.mqtt.client as mqtt
+import pyaudio
+import wave
+import soundfile as sf
+
 
 #GLOBAL VARIABLES
-op_status = '00'	#'00' means stop sending data, value != '00' need to send data.'02' means chop, '03' means stir
+op_status = '00'	#'00' means stop sending data, value != '00' need to send data to CPU
 prev_score = 0
 curr_score = 0
 
@@ -29,6 +33,13 @@ Gy_roll_arr = []
 Az_roll_arr = []
 Ay_roll_arr = []
 Ax_roll_arr = []
+
+chunk = 1024	#record in c hunks of 1024 samples
+sample_format = pyaudio.paInt16	#16 bits per sample
+channels = 1
+fs = 44100	#record at 44100 samples/second
+seconds = 2
+filename = 'test.wav'
 
 #GLOBAL CONSTANTS
 CHOP_SENSITIVITY_SCALING = 0
@@ -52,6 +63,11 @@ GOOD_ROLL_THRESH = 1
 DECENT_ROLL_THRESH = 4
 
 pour_status_flag = 0	#0 means start pouring, 1 means in process of pouring, 2 means finished pouring, 3 means finished action
+
+SAUTE_SENSITIVITY_SCALING = 0
+SAUTE_THRESH = 1.5
+GOOD_SAUTE_THRESH = 3
+DECENT_SAUTE_THRESH = 8
 
 # 0. define callbacks - functions that run when events happen.
 # The callback for when the client receives a CONNACK response from the server.
@@ -174,7 +190,7 @@ while True:	#continuously loop, even if don't need to collect data
 		Gy = gyro_y/131.0
 		Gz = gyro_z/131.0
 		
-		if op_status == '02':	#chop
+		if op_status == '02':	#chop and grate
 			Gz_arr[counter] = Gz
 			Gy_arr[counter] = Gy
 			Gx_arr[counter] = Gx
@@ -238,13 +254,13 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 					'''
 				counter = 0	#reset counter after operation with memory
-		elif op_status == '04'	#roll
-			Gz_stir_arr[counter] = Gz
-			Gy_stir_arr[counter] = Gy
-			Gx_stir_arr[counter] = Gx
-			Az_stir_arr[counter] = Az
-			Ay_stir_arr[counter] = Ay
-			Ax_stir_arr[counter] = Ax
+		elif op_status == '04'	#roll and garnish
+			Gz_roll_arr[counter] = Gz
+			Gy_roll_arr[counter] = Gy
+			Gx_roll_arr[counter] = Gx
+			Az_roll_arr[counter] = Az
+			Ay_roll_arr[counter] = Ay
+			Ax_roll_arr[counter] = Ax
 			counter+=1
 			if (counter == ROLL_COUNTER_THRESH):
 				max_Gz = max(Gz_roll_arr)
@@ -304,8 +320,43 @@ while True:	#continuously loop, even if don't need to collect data
 				total_Ax = 0
 			elif (total_Ax >= goal_Ax_after and pour_status_flag == 2):	#finish up motion
 				curr_score = 3	#return 3 when action completely finished
+		elif op_status == '06' #saute
+			Gz_roll_arr[counter] = Gz
+                        Gy_roll_arr[counter] = Gy
+                        Gx_roll_arr[counter] = Gx
+                        Az_roll_arr[counter] = Az
+                        Ay_roll_arr[counter] = Ay
+                       	Ax_roll_arr[counter] = Ax
+			counter += 1
+			if counter == ROLL_COUNTER_THRESH:	#same speed of return as roll function
+				max_Az = max(Az_roll_arr)
+                                max_Ay = max(Ay_roll_arr)
+                                max_Ax = max(Ax_roll_arr)
+                                min_Az = min(Az_roll_arr)
+                                min_Ay = min(Ay_roll_arr)
+                                min_Ax = min(Ax_roll_arr)
 
-
+                                avg_Gx = sum(Gx_roll_arr) / len(Gx_roll_arr)
+                                avg_Gy = sum(Gy_roll_arr) / len(Gy_roll_arr)
+                                avg_Gz = sum(Gz_roll_arr) / len(Gz_roll_arr)
+        
+                                avg_Ax = sum(Ax_roll_arr) / len(Ax_roll_arr)
+                                avg_Ay = sum(Ay_roll_arr) / len(Ay_roll_arr)
+                                avg_Az = sum(Az_roll_arr) / len(Az_roll_arr)
+				if abs(Az) > abs(Ax)-SAUTE_SENSITIVITY_SCALING and abs(Az) > abs(Ay)-SAUTE_SENSITIVITY_SCALING:	
+					#print('correct side down')
+					if abs(max_Ay) + abs(min_Ay) > SAUTE_THRESH and avg_Az > 1.1 and avg_Az < 1.3:
+						#print('saute detected')
+						if abs(avg_Gy) < GOOD_SAUTE_THRESH and abs(avg_Gz) < GOOD_SAUTE_THRESH:
+							#print('good chopping')
+							curr_score = 3
+						elif abs(avg_Gy) < DECENT_SAUTE_THRESH and abs(avg_Gz) < DECENT_SAUTE_THRESH:
+							#print('decent chopping')
+							curr_score = 2
+					else:
+						#print ('meh chopping')
+						curr_score = 1
+				counter = 0
 		if prev_score != curr_score:	#when see a new score, send update to CPU
 			prev_score = curr_score
 			message = op_status + str(curr_score)	#format: "023" means chopping (02) got a return score of 3
