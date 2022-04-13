@@ -12,7 +12,7 @@ import paho.mqtt.client as mqtt
 import pyaudio
 import wave
 import soundfile as sf
-
+import RPi.GPIO as GPIO	#import Pi GPIO library
 
 #GLOBAL VARIABLES
 op_status = '00'	#'00' means stop sending data, value != '00' need to send data to CPU
@@ -40,6 +40,8 @@ channels = 1
 fs = 44100	#record at 44100 samples/second
 seconds = 2
 filename = 'test.wav'
+
+speech_button_flag = 0	#0 means button not pressed, 1 means button was pressed
 
 #GLOBAL CONSTANTS
 CHOP_SENSITIVITY_SCALING = 0
@@ -144,6 +146,11 @@ Device_Address = 0x68   # MPU6050 device address
 
 MPU_Init()
 
+#Initialize push button
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#Set pin 7 to be an input pin and set init. value to be pulled low (off)
+
 #connect to MQTT
 client = mqtt.Client()
 client.on_connect = on_connect
@@ -170,7 +177,36 @@ for i in range(ROLL_COUNTER_THRESH)
 
 
 while True:	#continuously loop, even if don't need to collect data
-	while op_status != '00':        #runs when op_status != -1. Perform operation set by op_status
+	if GPIO.input(10) == GPIO.HIGH and speech_button_flag == 0:	#speech button flag pressed
+		speech_button_flag = 1
+	if speech_button_flag == 1:	#collect and send 2 seconds of speech data 
+		p = pyaudio.PyAudio()   #Create interface to PortAudio
+		stream = p.open(format = sample_format, channels = channels, rate = fs, frames_per_buffer = chunk, input = True)
+		frames = []	#Array to store frames
+		#Store data in chunks for 3 seconds
+		for i in range(0, int(fs/chunk*seconds)):
+			data = stream.read(chunk, exception_on_overflow = False)
+			frames.append(data)
+		#stop and close stream
+		stream.stop_stream()
+		stream.close()
+		#Terminate PortAudio interface
+		p.terminate()
+
+		wf = wave.open(filename, 'wb')
+		wf.setnchannels(channels)
+		wf.setsampwidth(p.get_sample_size(sample_format))
+		wf.setframerate(fs)
+		wf.writeframes(b''.join(frames))
+		wf.close()
+
+		f = open("test.wav", "rb")
+		imagestring = f.read()
+		f.close()
+		byteArray = bytearray(imagestring)
+		client.publish('1Team8A', byteArray)
+		speech_button_flag = 0	#reset speech button flag after recording
+	while op_status != '00':        #Perform operation set by op_status
 		#Read Accelerometer raw value
 		acc_x = read_raw_data(ACCEL_XOUT_H)
 		acc_y = read_raw_data(ACCEL_YOUT_H)
