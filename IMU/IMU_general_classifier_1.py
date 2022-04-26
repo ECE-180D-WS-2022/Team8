@@ -41,8 +41,8 @@ fs = 44100	#record at 44100 samples/second
 seconds = 2
 filename = 'test.wav'
 
-speech_button_flag = 0	#0 means button not pressed, 1 means button was pressed
-enter_button_flag = 0	#0 means not trying to enter a station, 1 means enter the station with op_status == '01'
+speech_flag = 0	#0 means will setup speech channel, 1 means have already set it up
+speech_recording_flag = 0	#0 means haven't recorded anything, 1 means recording waiting to be sent
 
 #GLOBAL CONSTANTS
 CHOP_SENSITIVITY_SCALING = 0
@@ -179,40 +179,36 @@ for i in range(ROLL_COUNTER_THRESH)
 
 
 while True:	#continuously loop, even if don't need to collect data
-	if GPIO.input(11) == GPIO.HIGH and op_status == '00':
-		client.publish('1Team8A', '010', qos=2)	#give an op_status of 01 to CPU for entering station
-		op_status = '01'
-	while op_status == '01':
-		if GPIO.input(10) == GPIO.HIGH and speech_button_flag == 0:	#speech button flag pressed
-			speech_button_flag = 1
-		if speech_button_flag == 1:	#collect and send 2 seconds of speech data 
+	while GPIO.input(11) == GPIO.HIGH:
+		if speech_flag == 0:	#setup audio collection channel 
 			p = pyaudio.PyAudio()   #Create interface to PortAudio
 			stream = p.open(format = sample_format, channels = channels, rate = fs, frames_per_buffer = chunk, input = True)
 			frames = []	#Array to store frames
-			#Store data in chunks for 3 seconds
-			for i in range(0, int(fs/chunk*seconds)):
-				data = stream.read(chunk, exception_on_overflow = False)
-				frames.append(data)
-			#stop and close stream
-			stream.stop_stream()
-			stream.close()
-			#Terminate PortAudio interface
-			p.terminate()
+			speech_flag = 1
+		data = stream.read(chunk, exception_on_overflow = False)
+		frames.append(data)
+		speech_recording_flag = 1
+	if speech_recording_flag == 1:	#just finished recording data
+		#stop and close stream
+		stream.stop_stream()
+		stream.close()
+		#Terminate PortAudio interface
+		p.terminate()
 
-			wf = wave.open(filename, 'wb')
-			wf.setnchannels(channels)
-			wf.setsampwidth(p.get_sample_size(sample_format))
-			wf.setframerate(fs)
-			wf.writeframes(b''.join(frames))
-			wf.close()
+		wf = wave.open(filename, 'wb')
+		wf.setnchannels(channels)
+		wf.setsampwidth(p.get_sample_size(sample_format))
+		wf.setframerate(fs)
+		wf.writeframes(b''.join(frames))
+		wf.close()
 
-			f = open("test.wav", "rb")
-			imagestring = f.read()
-			f.close()
-			byteArray = bytearray(imagestring)
-			client.publish('1Team8A', byteArray)
-			speech_button_flag = 0	#reset speech button flag after recording
-			op_status = '00'
+		f = open("test.wav", "rb")
+		imagestring = f.read()
+		f.close()
+		byteArray = bytearray(imagestring)
+		client.publish('3Team8A', byteArray)
+		speech_flag = 0	#reset speech flags after recording
+		speech_recording_flag = 0
 	while op_status != '00':        #Perform operation set by op_status
 		#Read Accelerometer raw value
 		acc_x = read_raw_data(ACCEL_XOUT_H)
