@@ -13,6 +13,7 @@ from pygame import movie
 from pygame.locals import *
 import cv2
 import moviepy.editor
+import glob
 
 GOAL_STIR = 23
 GOAL_CUTTING = 27
@@ -66,7 +67,7 @@ timer_flag = 0
 meh = 1
 good = 2 
 excellent = 3
-
+current_images = []
 #colors
 backgroundColor=(255, 255, 255)
 green = (2, 100,64)
@@ -173,7 +174,7 @@ bg_stove = pygame.image.load('images/stir/background2.png')
 board=pygame.image.load('images\cuttingboard3.png')
 
 vs_score = pygame.image.load('images/score_page.png')
-vs_score_opp = pygame.image.load('images/score_page_opp.png')e
+vs_score_opp = pygame.image.load('images/score_page_opp.png')
 
 calimg = pygame.image.load('images/calibration_instructions.png')
 modimg = pygame.image.load('images/game_mode_selection.png')
@@ -204,8 +205,15 @@ msg_knife= myfont.render('Say knife to start', False, (0,0,0))
 msg_good = myfont.render('Good job!', False, (0,0,0))
 smallFont = pygame.font.SysFont('Arial', 30)
 completion= smallFont.render('You have completed this task!', False, (0,0,0))
-#fonts
+#fonts           
 
+def load_vid(pathname):
+    global current_images
+    current_graphics = glob.glob(str(pathname) +'/*.png')
+    for i in current_graphics:
+        current_images.append(pygame.image.load(current_graphics[i]))
+    return len(current_images)
+    
 #vision processing code
 def track_player():
     global x_pos
@@ -315,7 +323,7 @@ def calibration():
         pygame.display.flip()
 #vision processing code
 
-def progressBarChops(current, total):
+def progress_bar(current, total):
     #increment progress bar
     pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
     #increment progress bars
@@ -326,11 +334,11 @@ def progressBarChops(current, total):
 def task(action, x, y, msg_begin):
     global speed
     global current_goal
+    global current_images
     action = int(action)
     string_action = classifier(action)
-    current_vid
     if (string_action == 'Stir'):
-        current_vid = stir_vid
+        load_vid()
         current_bg = bg_chopping
     elif(string_action == 'Cut'):
         current_vid = carrot_chop_vid
