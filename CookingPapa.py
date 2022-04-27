@@ -1,6 +1,7 @@
 from email import message
 from pickle import FALSE
 from socketserver import ThreadingUnixDatagramServer
+import string
 import time as t 
 import paho.mqtt.client as mqtt
 import threading
@@ -15,8 +16,6 @@ import cv2
 import moviepy.editor
 import glob
 
-GOAL_STIR = 23
-GOAL_CUTTING = 27
 TOTAL_CUTTING = 1
 TOTAL_STOVE = 1
 CONTROLLER_BUFFER = 2
@@ -30,7 +29,7 @@ FLAG_GARNISH = '09'
 STOP = '00'
 SCRAMBLE = '13'
 SWITCH = '14'
-SCREEN_HEIGHT = 900
+SCREEN_HEIGHT = 800
 SCREEN_WIDTH = 1200
 
 MESSAGE = '10'
@@ -167,11 +166,13 @@ pygame.display.set_caption("Chopping")
 
 #load images
 bg_img = pygame.image.load('images/kitchen_half.png')
-bg_img = pygame.transform.scale(bg_img, (1200, 900))
-bg_chopping = pygame.image.load('images/chopping.png')
-bg_chopping = pygame.transform.scale(bg_chopping, (1200, 900))
-bg_stove = pygame.image.load('images/stir/background2.png')
-board=pygame.image.load('images\cuttingboard3.png')
+bg_img = pygame.transform.scale(bg_img, windowsize)
+bg_chopping = pygame.image.load('backgrounds/cuttingboard.png')
+bg_chopping = pygame.transform.scale(bg_chopping, windowsize)
+bg_stove = pygame.image.load('backgrounds/stove.png')
+bg_stove = pygame.transform.scale(bg_stove, windowsize)
+bg_pour = pygame.image.load('backgrounds/tile.png')
+bg_pour = pygame.transform.scale(bg_pour, windowsize)
 
 vs_score = pygame.image.load('images/score_page.png')
 vs_score_opp = pygame.image.load('images/score_page_opp.png')
@@ -191,10 +192,6 @@ countdown = moviepy.editor.VideoFileClip('images/3_2_1.mp4')
 playvid = moviepy.editor.VideoFileClip('images/player_selection_vid.mp4')
 play1vid = moviepy.editor.VideoFileClip('images/player_1_selected.mp4')
 play2vid = moviepy.editor.VideoFileClip('images/player_2_selected.mp4')
-carrot_chop_vid = cv2.VideoCapture(" .mp4")
-potato_chop_vid = cv2.VideoCapture(" .mp4")
-stir_vid = cv2.VideoCapture(" .mp4")
-pour_vid = cv2.VideoCapture(" .mp4")
 #videos
 
 #fonts
@@ -203,7 +200,7 @@ myfont = pygame.font.SysFont('Bukhari Script.ttf', 40)
 msg_spoon= myfont.render('Say spoon to start', False, (0,0,0))
 msg_knife= myfont.render('Say knife to start', False, (0,0,0))
 msg_good = myfont.render('Good job!', False, (0,0,0))
-smallFont = pygame.font.SysFont('Arial', 30)
+smallFont = pygame.font.SysFont('Bukhari Script.ttf', 30)
 completion= smallFont.render('You have completed this task!', False, (0,0,0))
 #fonts           
 
@@ -211,7 +208,7 @@ def load_vid(pathname):
     global current_images
     current_graphics = glob.glob(str(pathname) +'/*.png')
     for i in current_graphics:
-        current_images.append(pygame.image.load(current_graphics[i]))
+        current_images.append(pygame.image.load(i))
     return len(current_images)
     
 #vision processing code
@@ -331,56 +328,47 @@ def progress_bar(current, total):
     for t in range(0,x):
         pygame.draw.rect(win, green, pygame.Rect(350+(50*t), 821, 48, 28) )
 
-def task(action, x, y, msg_begin):
+def task(action):
     global speed
-    global current_goal
     global current_images
+    global timer_set
+    global last_action
+
+    #Beginning of task code
+    client.publish(str(flag_player)+'Team8B', str(FLAG_STIR), qos=1)
+    t.sleep(CONTROLLER_BUFFER)
+    timer_set = 1
     action = int(action)
     string_action = classifier(action)
+    size_of_vid = 0
+    current_images.clear()
+    win = pygame.display.set_mode(windowsize)
+
+    #if elif statements
     if (string_action == 'Stir'):
-        load_vid()
+        size_of_vid = load_vid("stirsauce")
         current_bg = bg_chopping
     elif(string_action == 'Cut'):
-        current_vid = carrot_chop_vid
+        size_of_vid = load_vid("choptomato")
         current_bg = bg_stove
+    # elif(string_action == 'Roll'):
+    #     size_of_vid = load_vid("0")
     elif(string_action == 'Pour'):
-        current_vid = pour_vid
+        size_of_vid = load_vid("poursauce")
+        current_bg = bg_pour
+    #if elif statements
     speed = 1   #default
-    i = 0
-    drawBackground(current_bg, globals()['s1'], x, y, msg_begin)
-    while (current_vid.isOpened()):
-        ret, frame = cap.read()
-     
-    # This condition prevents from infinite looping
-    # incase video ends.
-        if ret == False:
-            break
-        if cv2.waitKey(25) & 0xFF == ord('q'): 
-            break
-        t.sleep(0.1)
-        win.blit(current_bg, (0, 0))
-        # cv2.imwrite('Frame'+str(i)+'.jpg', frame)
-        # i += 1
-        # frame_jpg = pygame.image.load('images\Frame'+str(i)+'.jpg')
-        win.blit(globals()[frame], (x, y))
+    for i in range(size_of_vid):
+        win.blit(current_bg,(0,0))
+        win.blit(current_images[i],(0,0))
         pygame.display.update()
+        t.sleep(0.05)
 
-    t.sleep(1)
+    #ending of task code
+    last_action = action
+    timer_set = 0 
+    client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
     return
-
-def drawBackground(bg, action_frame, coord_x, coord_y, msg):
-    win.fill(backgroundColor)
-    win.blit(bg, (0, 0))
-    win.blit(action_frame, (coord_x, coord_y))
-    win.blit(msg, (200,50))
-	 #draw progress bar outline
-    pygame.draw.rect(win, black, pygame.Rect(349, 820, 500, 30),2 )
-    pygame.display.update()
-
-def taskCompleted(backdrop, action_frame, coord_x, coord_y, msg):
-    drawBackground(backdrop, action_frame, coord_x, coord_y, msg)
-    progressBarChops(1, 1)
-    pygame.display.update()
 
 def displayScore(score, opponent_score, feedback):
     global flag_player
@@ -453,10 +441,12 @@ def classifier(num):    #classify for user output
     global current_goal
     if int(num) == int(FLAG_CUTTING):
         output = 'Cut'
-        current_goal = GOAL_CUTTING
     elif int(num) == int(FLAG_STIR):
         output = 'Stir'
-        current_goal = GOAL_STIR
+    elif int(num) == int(FLAG_ROLLING):
+        output = 'Roll'
+    elif int(num) == int(FLAG_POURING):
+        output = 'Pour'
     elif int(num) == 0:
         output = 'DONE'
     return output
@@ -552,10 +542,10 @@ def from_speech():
         s = str(s)
         f = open('receive.wav','wb')
         f.truncate(0)
-        return s
+        return s.lower()
     except sr.UnknownValueError:
         txt = '0'
-        return txt
+        return txt.lower()
 
 def timer(timer_type):
     global timer_set
@@ -693,20 +683,19 @@ def main():
                 break
                 #will only trigger/pause the code if speech is detected to have been said
             if speech_said == True:
-                if x_pos > 800 and from_speech() == 'stove':
-                    position = stove
-                    end1 = t.time()
-                    cv2.destroyAllWindows()
-                    in_cooking = 1
-                    break
-                elif x_pos < 400 and from_speech() == 'cutting board':
-                    position = cutting
-                    end2 = t.time()
-                    cv2.destroyAllWindows()
-                    in_cooking = 1
-                    break
-                else:   #reset speech_said boolean
-                    speech_said = False
+                if from_speech() == 'enter':
+                    if x_pos > 800:
+                        position = stove
+                        cv2.destroyAllWindows()
+                        in_cooking = 1
+                        break
+                    elif x_pos < 400:
+                        position = cutting
+                        cv2.destroyAllWindows()
+                        in_cooking = 1
+                        break
+                    else:   #reset speech_said boolean
+                        speech_said = False
     ####################
     #PLAYER LOCALIZATION
     ####################
@@ -716,10 +705,10 @@ def main():
     ###############
         if position == 2:
             #ask IMU for stove classifier data
-            drawBackground(bg_stove, 340, 220, msg_spoon)
             txt = '0'
+            win.blit(msg_spoon,(50,50))
+            pygame.display.update()
             while txt.lower() != 'spoon':
-                print("Say 'spoon' to start stirring")
                 txt = from_speech()
                 check = txt.lower()
                 i = 0
@@ -730,36 +719,41 @@ def main():
                         if charO2 == 'o':
                             txt = 'spoon'
                             break
-            print('waiting for input')
-            client.publish(str(flag_player)+'Team8B', str(FLAG_STIR), qos=1)
-            t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
-            print('starting')
-            timer_set = 1
-            task(FLAG_STIR, bg_stove,340, 220, msg_spoon)
-            last_action = int(FLAG_STIR)
-            timer_set = 0
-            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
+            task(FLAG_STIR)
         elif position == 3:
             #ask IMU for cutting classifier data
-            drawBackground(board, 200, 110, msg_knife)
             txt = '0'
+            win.blit(msg_knife,(50,50))
+            pygame.display.update()
             while txt.lower() != 'knife':
-                print("Say knife to start cutting")
                 txt = from_speech()
                 if txt.lower() == 'night':   #common word
                     txt = 'knife'
-        
-            print('waiting for input')
-            client.publish(str(flag_player)+'Team8B', str(FLAG_CUTTING), qos=1)
-            t.sleep(CONTROLLER_BUFFER)
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
-            print('starting')
-            timer_set = 1
-            task(FLAG_CUTTING,board,200,110,msg_knife)
-            timer_set = 0 
-            last_action = int(FLAG_CUTTING)
-            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
+            task(FLAG_CUTTING)
+        elif position == 4:
+            #ask IMU for rolling classifier data
+            txt = '0'
+            win.blit(msg_knife,(50,50))
+            pygame.display.update()
+            while txt.lower() != 'roll':
+                txt = from_speech()
+                if txt.lower() == 'toll':   #common word
+                    txt = 'roll'
+            client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the counter', qos = 1)
+            task(FLAG_ROLLING)
+        elif position == 5:
+                #ask IMU for pouring classifier data
+            txt = '0'
+            win.blit(msg_knife,(50,50))
+            pygame.display.update()
+            while txt.lower() != 'roll':
+                txt = from_speech()
+                if txt.lower() == 'toll':   #common word
+                    txt = 'roll'
+            client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the counter', qos = 1)
+            task(FLAG_POURING)
         in_cooking = 0
     ###############
     #PLAYER ACTIONS
