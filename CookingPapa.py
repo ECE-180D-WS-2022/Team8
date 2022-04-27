@@ -16,8 +16,6 @@ import cv2
 import moviepy.editor
 import glob
 
-TOTAL_CUTTING = 1
-TOTAL_STOVE = 1
 CONTROLLER_BUFFER = 2
 FLAG_START = '01'
 FLAG_CUTTING = '02'
@@ -31,6 +29,10 @@ SCRAMBLE = '13'
 SWITCH = '14'
 SCREEN_HEIGHT = 800
 SCREEN_WIDTH = 1200
+COUNTER = 1
+CUTTING_BOARD = 2
+STOVE = 3
+PLATE = 4
 
 MESSAGE = '10'
 
@@ -45,7 +47,7 @@ stove = 2
 
 #globals
 recipe_count = 0
-position = 0
+position = 0    #will be 1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 in_cooking = 0
 start = t.time()
 end = t.time()
@@ -197,11 +199,15 @@ play2vid = moviepy.editor.VideoFileClip('images/player_2_selected.mp4')
 #fonts
 #pygame.font.init()
 myfont = pygame.font.SysFont('Bukhari Script.ttf', 40)
-msg_spoon= myfont.render('Say spoon to start', False, (0,0,0))
-msg_knife= myfont.render('Say knife to start', False, (0,0,0))
+msg_spoon = myfont.render('Say spoon to start', False, (0,0,0))
+msg_knife = myfont.render('Say knife to start', False, (0,0,0))
+msg_cheese = myfont.render('Say cheese to start', False, (0,0,0))
+msg_pour = myfont.render('Say pour to start', False, (0,0,0))
+msg_roll = myfont.render('Say roll to start', False, (0,0,0))
 msg_good = myfont.render('Good job!', False, (0,0,0))
 smallFont = pygame.font.SysFont('Bukhari Script.ttf', 30)
 completion= smallFont.render('You have completed this task!', False, (0,0,0))
+current_msg = myfont.render('Say spoon to start', False, (0,0,0))
 #fonts           
 
 def load_vid(pathname):
@@ -576,6 +582,7 @@ def main():
     global position
     global timer_set
     global timer_time
+    global current_msg
     #####################
     #GLOBAL DECLARATIONS
     #####################
@@ -684,13 +691,23 @@ def main():
                 #will only trigger/pause the code if speech is detected to have been said
             if speech_said == True:
                 if from_speech() == 'enter':
-                    if x_pos > 800:
-                        position = stove
+                    if x_pos > 900:
+                        position = COUNTER
                         cv2.destroyAllWindows()
                         in_cooking = 1
                         break
-                    elif x_pos < 400:
-                        position = cutting
+                    elif x_pos > 600 and x_pos < 900:
+                        position = CUTTING_BOARD
+                        cv2.destroyAllWindows()
+                        in_cooking = 1
+                        break
+                    elif x_pos > 300 and x_pos < 600:
+                        position = STOVE
+                        cv2.destroyAllWindows()
+                        in_cooking = 1
+                        break
+                    elif x_pos < 300:
+                        position = PLATE
                         cv2.destroyAllWindows()
                         in_cooking = 1
                         break
@@ -703,12 +720,23 @@ def main():
     ###############
     #PLAYER ACTIONS
     ###############
-        if position == 2:
+        if position == PLATE:
+            #ask IMU for plate classifier data
+            txt = '0'
+            win.blit(current_msg,(50,50))
+            pygame.display.update()
+            while txt.lower() != 'cheese' and txt.lower() != 'exit':
+                txt = from_speech()
+            if txt.lower() == 'exit':   #back to stage selection
+                continue
+            client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is plating',qos = 1)
+            task(FLAG_CHEESE)
+        elif position == STOVE:
             #ask IMU for stove classifier data
             txt = '0'
-            win.blit(msg_spoon,(50,50))
+            win.blit(current_msg,(50,50))
             pygame.display.update()
-            while txt.lower() != 'spoon':
+            while txt.lower() != 'spoon' and txt.lower() != 'exit':
                 txt = from_speech()
                 check = txt.lower()
                 i = 0
@@ -719,41 +747,41 @@ def main():
                         if charO2 == 'o':
                             txt = 'spoon'
                             break
+            if txt.lower() == 'exit':
+                continue
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             task(FLAG_STIR)
-        elif position == 3:
+        elif position == CUTTING_BOARD:
             #ask IMU for cutting classifier data
             txt = '0'
-            win.blit(msg_knife,(50,50))
+            win.blit(current_msg,(50,50))
             pygame.display.update()
-            while txt.lower() != 'knife':
+            while txt.lower() != 'knife' and txt.lower() != 'exit':
                 txt = from_speech()
                 if txt.lower() == 'night':   #common word
                     txt = 'knife'
+            if txt.lower() == 'exit':
+                continue
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the stove', qos = 1)
             task(FLAG_CUTTING)
-        elif position == 4:
+        elif position == COUNTER:
             #ask IMU for rolling classifier data
             txt = '0'
-            win.blit(msg_knife,(50,50))
+            win.blit(current_msg,(50,50))
             pygame.display.update()
-            while txt.lower() != 'roll':
+            while txt.lower() != 'roll' and txt.lower()!= 'pour' and txt.lower() != 'exit':
                 txt = from_speech()
                 if txt.lower() == 'toll':   #common word
                     txt = 'roll'
+                if txt.lower() == 'boar':
+                    txt = 'pour'
+            if txt.lower() == 'exit':
+                continue
             client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the counter', qos = 1)
-            task(FLAG_ROLLING)
-        elif position == 5:
-                #ask IMU for pouring classifier data
-            txt = '0'
-            win.blit(msg_knife,(50,50))
-            pygame.display.update()
-            while txt.lower() != 'roll':
-                txt = from_speech()
-                if txt.lower() == 'toll':   #common word
-                    txt = 'roll'
-            client.publish(str(flag_opponent)+'Team8',str(MESSAGE) + 'Your opponent is at the counter', qos = 1)
-            task(FLAG_POURING)
+            if txt.lower() == 'roll':
+                task(FLAG_ROLLING)
+            elif txt.lower() == 'pour':
+                task(FLAG_POURING)
         in_cooking = 0
     ###############
     #PLAYER ACTIONS
