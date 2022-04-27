@@ -1,0 +1,1 @@
+- IMU_Data_Analysis.xlsx includes a sample set of data and subsequent graph for chopping and stirring actions 

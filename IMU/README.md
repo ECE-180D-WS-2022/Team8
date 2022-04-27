@@ -1,0 +1,6 @@
+- IMU_data_collection.py is used to collect data using the Raspberry Pi and IMU with no classification.
+- IMU_chop_classifier.py is used to run the chop classifier without any MQTT connection.
+- IMU_stir_classifier.py is used to run the stir classifier without any MQTT connection.
+- IMU_general_classifier_1.py and IMU_general_classifier_2.py are for player 1 and player 2 respectively. General classifers run with MQTT and are actually used in the integrated game.
+- IMU_roll_classifier.py is used to run the kneading/rolling classifier without any MQTT connection.
+- IMU_saute_classifier.py is used to run the saute classifier without any MQTT connection.
