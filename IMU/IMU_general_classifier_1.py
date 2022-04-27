@@ -206,7 +206,7 @@ while True:	#continuously loop, even if don't need to collect data
 		imagestring = f.read()
 		f.close()
 		byteArray = bytearray(imagestring)
-		client.publish('3Team8A', byteArray)
+		client.publish('1Team8C', byteArray)
 		speech_flag = 0	#reset speech flags after recording
 		speech_recording_flag = 0
 	while op_status != '00':        #Perform operation set by op_status
