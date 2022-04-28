@@ -3,7 +3,6 @@ Documentation for button press: https://raspberrypihq.com/use-a-push-button-with
 '''
 
 import RPi.GPIO as GPIO	#import Pi GPIO library
-import time
 from time import sleep
 import pyaudio
 import wave

@@ -78,7 +78,7 @@ def on_connect(client, userdata, flags, rc):
 	print("Connection returned result: "+str(rc))
 # Subscribing in on_connect() means that if we lose the connection and
 # reconnect then subscriptions will be renewed.
-	client.subscribe("2Team8B", qos=2)
+	client.subscribe("1Team8B", qos=2)
 # The callback of the client when it disconnects.
 
 def on_disconnect(client, userdata, rc):
@@ -169,7 +169,7 @@ for i in range(COUNTER_THRESH):
 	Ay_arr.append(i)
 	Ax_arr.append(i)
 
-for i in range(ROLL_COUNTER_THRESH):
+for i in range(ROLL_COUNTER_THRESH)
 	Gx_roll_arr.append(i)
 	Gy_roll_arr.append(i)
 	Gz_roll_arr.append(i)
@@ -206,44 +206,42 @@ while True:	#continuously loop, even if don't need to collect data
 		imagestring = f.read()
 		f.close()
 		byteArray = bytearray(imagestring)
-		client.publish('2Team8C', byteArray)
+		client.publish('1Team8C', byteArray)
 		speech_flag = 0	#reset speech flags after recording
 		speech_recording_flag = 0
-		print("wav sent")
 	while op_status != '00':        #Perform operation set by op_status
-		while GPIO.input(11) == GPIO.HIGH:
-			if speech_flag == 0:    #setup audio collection channel 
-				p = pyaudio.PyAudio()   #Create interface to PortAudio
-				stream = p.open(format = sample_format, channels = channels, rate = fs, frames_per_buffer = chunk, input = True)
-				frames = []     #Array to store frames
-				speech_flag = 1
-			data = stream.read(chunk, exception_on_overflow = False)
-			frames.append(data)
-			speech_recording_flag = 1
-		if speech_recording_flag == 1:  #just finished recording data
-                  	#stop and close stream
-			stream.stop_stream()
-			stream.close()
-                        #Terminate PortAudio interface
-			p.terminate()
-
-			wf = wave.open(filename, 'wb')
-			wf.setnchannels(channels)
-			wf.setsampwidth(p.get_sample_size(sample_format))
-			wf.setframerate(fs)
-			wf.writeframes(b''.join(frames))
-			wf.close()
-
-			f = open("test.wav", "rb")
-			imagestring = f.read()
-			f.close()
-			byteArray = bytearray(imagestring)
-			client.publish('1Team8C', byteArray)
-			speech_flag = 0 #reset speech flags after recording
-			speech_recording_flag = 0
-			print("wav sent")
 		#Read Accelerometer raw value
-		acc_x = read_raw_data(ACCEL_XOUT_H)
+		while GPIO.input(11) == GPIO.HIGH:
+		if speech_flag == 0:    #setup audio collection channel 
+                        p = pyaudio.PyAudio()   #Create interface to PortAudio
+                        stream = p.open(format = sample_format, channels = channels, rate = fs, frames_per_buffer = chunk, input = True)
+                        frames = []     #Array to store frames
+                        speech_flag = 1
+                data = stream.read(chunk, exception_on_overflow = False)
+                frames.append(data)
+                speech_recording_flag = 1
+		if speech_recording_flag == 1:  #just finished recording data
+			#stop and close stream
+                        stream.stop_stream()
+                        stream.close()
+                        #Terminate PortAudio interface
+                        p.terminate()
+
+                        wf = wave.open(filename, 'wb')
+                        wf.setnchannels(channels)
+                        wf.setsampwidth(p.get_sample_size(sample_format))
+                        wf.setframerate(fs)
+                        wf.writeframes(b''.join(frames))
+                        wf.close()
+
+                        f = open("test.wav", "rb")
+                        imagestring = f.read()
+                        f.close()
+                        byteArray = bytearray(imagestring)
+                        client.publish('1Team8C', byteArray)
+                        speech_flag = 0 #reset speech flags after recording
+                        speech_recording_flag = 0
+		 acc_x = read_raw_data(ACCEL_XOUT_H)
 		acc_y = read_raw_data(ACCEL_YOUT_H)
 		acc_z = read_raw_data(ACCEL_ZOUT_H)
         
@@ -325,7 +323,7 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 					'''
 				counter = 0	#reset counter after operation with memory
-		elif op_status == '04':	#roll and garnish
+		elif op_status == '04'	#roll and garnish
 			Gz_roll_arr[counter] = Gz
 			Gy_roll_arr[counter] = Gy
 			Gx_roll_arr[counter] = Gx
@@ -368,7 +366,7 @@ while True:	#continuously loop, even if don't need to collect data
 					else:
 						curr_score = 1
 				counter = 0
-		elif op_status == '05':	#pour
+		elif op_status == '05'	#pour
 			if (pour_status_flag == 0):	#before start pouring, setup
 				if (Ax < 1.3 and Ax > 0.99):	#Ax correctly facing down
 					curr_score = 0	#for pour, return 0 when finished with setup stage
@@ -391,29 +389,29 @@ while True:	#continuously loop, even if don't need to collect data
 				total_Ax = 0
 			elif (total_Ax >= goal_Ax_after and pour_status_flag == 2):	#finish up motion
 				curr_score = 3	#return 3 when action completely finished
-		elif op_status == '06': #saute
+		elif op_status == '06' #saute
 			Gz_roll_arr[counter] = Gz
-			Gy_roll_arr[counter] = Gy
-			Gx_roll_arr[counter] = Gx
-			Az_roll_arr[counter] = Az
-			Ay_roll_arr[counter] = Ay
-			Ax_roll_arr[counter] = Ax
+                        Gy_roll_arr[counter] = Gy
+                        Gx_roll_arr[counter] = Gx
+                        Az_roll_arr[counter] = Az
+                        Ay_roll_arr[counter] = Ay
+                       	Ax_roll_arr[counter] = Ax
 			counter += 1
 			if counter == ROLL_COUNTER_THRESH:	#same speed of return as roll function
 				max_Az = max(Az_roll_arr)
-				max_Ay = max(Ay_roll_arr)
-				max_Ax = max(Ax_roll_arr)
-				min_Az = min(Az_roll_arr)
-				min_Ay = min(Ay_roll_arr)
-				min_Ax = min(Ax_roll_arr)
+                                max_Ay = max(Ay_roll_arr)
+                                max_Ax = max(Ax_roll_arr)
+                                min_Az = min(Az_roll_arr)
+                                min_Ay = min(Ay_roll_arr)
+                                min_Ax = min(Ax_roll_arr)
 
-				avg_Gx = sum(Gx_roll_arr) / len(Gx_roll_arr)
-				avg_Gy = sum(Gy_roll_arr) / len(Gy_roll_arr)
-				avg_Gz = sum(Gz_roll_arr) / len(Gz_roll_arr)
+                                avg_Gx = sum(Gx_roll_arr) / len(Gx_roll_arr)
+                                avg_Gy = sum(Gy_roll_arr) / len(Gy_roll_arr)
+                                avg_Gz = sum(Gz_roll_arr) / len(Gz_roll_arr)
         
-				avg_Ax = sum(Ax_roll_arr) / len(Ax_roll_arr)
-				avg_Ay = sum(Ay_roll_arr) / len(Ay_roll_arr)
-				avg_Az = sum(Az_roll_arr) / len(Az_roll_arr)
+                                avg_Ax = sum(Ax_roll_arr) / len(Ax_roll_arr)
+                                avg_Ay = sum(Ay_roll_arr) / len(Ay_roll_arr)
+                                avg_Az = sum(Az_roll_arr) / len(Az_roll_arr)
 				if abs(Az) > abs(Ax)-SAUTE_SENSITIVITY_SCALING and abs(Az) > abs(Ay)-SAUTE_SENSITIVITY_SCALING:	
 					#print('correct side down')
 					if abs(max_Ay) + abs(min_Ay) > SAUTE_THRESH and avg_Az > 1.1 and avg_Az < 1.3:
@@ -432,7 +430,7 @@ while True:	#continuously loop, even if don't need to collect data
 			prev_score = curr_score
 			message = op_status + str(curr_score)	#format: "023" means chopping (02) got a return score of 3
 			print(message)
-			client.publish('2Team8A', message, qos=2)
+			client.publish('1Team8A', message, qos=2)
 			sleep(1)
         #reset score variables when done with each operation
 	prev_score = 0
