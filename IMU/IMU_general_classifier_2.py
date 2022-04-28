@@ -65,6 +65,11 @@ AZ_ROLL_THRESH_TOP = 0.7	#max - min Az must be smaller than this value to regist
 GOOD_ROLL_THRESH = 1
 DECENT_ROLL_THRESH = 4
 
+total_Ax = 0
+total_Az = 0
+goal_Az = -100
+goal_Ax_before = 100
+goal_Ax_after = 30
 pour_status_flag = 0	#0 means start pouring, 1 means in process of pouring, 2 means finished pouring, 3 means finished action
 
 SAUTE_SENSITIVITY_SCALING = 0
@@ -369,6 +374,7 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 				counter = 0
 		elif op_status == '05':	#pour
+			print(pour_status_flag)
 			if (pour_status_flag == 0):	#before start pouring, setup
 				if (Ax < 1.3 and Ax > 0.99):	#Ax correctly facing down
 					curr_score = 0	#for pour, return 0 when finished with setup stage
