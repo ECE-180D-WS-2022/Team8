@@ -15,6 +15,18 @@ from pygame.locals import *
 import cv2
 import moviepy.editor
 import glob
+import pyaudio
+import re 
+import math
+from pathlib import Path
+
+p = pyaudio.PyAudio()
+info = p.get_host_api_info_by_index(0)
+numdevices = info.get('deviceCount')
+
+for i in range(0, numdevices):
+    if (p.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+        print("Input Device id ", i, " - ", p.get_device_info_by_host_api_device_index(0, i).get('name'))
 
 CONTROLLER_BUFFER = 2
 FLAG_START = '01'
@@ -191,7 +203,7 @@ def recipe_randomizer(difficulty):
         elif recipe == 2:
             all_recipes = np.append(all_recipes, pasta, axis=0)
 
-def task(action, msg_begin):
+def task(action):
     global speed
     global current_images
     action = int(action)
@@ -200,21 +212,22 @@ def task(action, msg_begin):
     current_images.clear()
     win = pygame.display.set_mode(windowsize)
     if (string_action == 'Stir'):
-        size_of_vid = load_vid("stirsauce")
-        current_bg = bg_chopping
+        size_of_vid = load_vid("stir_sauce")
+        #current_bg = bg_chopping
     elif(string_action == 'Cut'):
-        size_of_vid = load_vid("choptomato")
-        current_bg = bg_stove
+        size_of_vid = load_vid("chop_tomato")
+        #current_bg = bg_stove
     elif(string_action == 'Pour'):
-        size_of_vid = load_vid("poursauce")
-        current_bg = bg_pour
+        size_of_vid = load_vid("pour_sauce")
+        #current_bg = bg_pour
     speed = 1  # default
     for i in range(size_of_vid):
-        win.blit(current_bg, (0, 0))
+        #win.blit(current_bg, (0, 0))
         win.blit(current_images[i], (0, 0))
-        win.blit(msg_spoon, (50, 50))
+        print('blitting image: ' + str(i))
+        #win.blit(msg_spoon, (50, 50))
         pygame.display.update()
-        t.sleep(0.05)
+        t.sleep(.1)
 
     t.sleep(1)
     return
@@ -237,16 +250,22 @@ def classifier(num):    #classify for user output
         output = 'DONE'
     return output
 
+file_pattern = re.compile(r'.*?(\d+).*?')
+def get_order(file):
+    match = file_pattern.match(Path(file).name)
+    if not match:
+        return math.inf
+    return int(match.groups()[0])
+
 def load_vid(pathname):
     global current_images
-    current_graphics = glob.glob(str(pathname) + '/*.png')
+    current_graphics = sorted(glob.glob('animationPNGs/'+str(pathname) + '/*.png'),key = get_order)
+    print(current_graphics)
     for i in current_graphics:
-        current_images.append(pygame.image.load(i))
+        current_images.append(pygame.image.load(i).convert())
     return len(current_images)
 
 def main():
-    recipe_randomizer('easy')
-    print(len(all_recipes[0][0]))
-
+    task(2)
 
 main()
