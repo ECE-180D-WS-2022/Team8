@@ -1,6 +1,8 @@
 from email import message
 from pickle import FALSE
-import time as t
+#from socketserver import ThreadingUnixDatagramServer
+import string
+import time as t 
 import paho.mqtt.client as mqtt
 import threading
 import ctypes
@@ -14,36 +16,38 @@ import cv2
 import moviepy.editor
 import glob
 
-TOTAL_CUTTING = 1
-TOTAL_STOVE = 1
 CONTROLLER_BUFFER = 2
 FLAG_START = '01'
 FLAG_CUTTING = '02'
 FLAG_STIR = '03'
 FLAG_ROLLING = '04'
 FLAG_POURING = '05'
-FLAG_CHEESE = '08'
+FLAG_SHRED = '08'
 FLAG_GARNISH = '09'
 STOP = '00'
 SCRAMBLE = '13'
 SWITCH = '14'
 SCREEN_HEIGHT = 800
 SCREEN_WIDTH = 1200
+COUNTER = 1
+CUTTING_BOARD = 2
+STOVE = 3
+PLATE = 4
 
 MESSAGE = '10'
 
 FLAG_SCORE = '99'
 
-# BOARD POSITIONS
+#BOARD POSITIONS
 cutting = 3
 stove = 2
-# BOARD POSITIONS
+#BOARD POSITIONS
 
-# CONST GLOBALS
+##CONST GLOBALS
 
-# globals
+#globals
 recipe_count = 0
-position = 0
+position = 0    #will be 1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 in_cooking = 0
 start = t.time()
 end = t.time()
@@ -62,36 +66,35 @@ timer_set = 0
 timer_time = 0
 timer_flag = 0
 meh = 1
-good = 2
+good = 2 
 excellent = 3
 current_images = []
-# colors
-backgroundColor = (255, 255, 255)
-green = (2, 100, 64)
-black = (0, 0, 0)
-# window
+current_recipe = '0'
+current_ingr = '0'
+#colors
+backgroundColor=(255, 255, 255)
+green = (2, 100,64)
+black = (0,0,0)
+#window
 windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
-win = pygame.display.set_mode(windowsize)
+win=pygame.display.set_mode(windowsize)
 
-# Vision processing code
+#Vision processing code 
 init_cal = False
 x_c_1 = 0
 y_c_1 = 0
 x_c_2 = 0
 y_c_2 = 0
-counter = 0
-x_pos = 0
+counter = 0 
+x_pos  = 0
 
-# recipe declarations
-all_recipes = np.empty((0, 6), str)
-pizza = np.array([['1', '2', '3', '4', '5', '8']])
-vegetable_soup = np.array([['1', '2', '2', '3', '5', '9']])
-pasta = np.array([['1', '5', '3', '2', '9', '0']])
-# recipe declarations
-
+#recipe declarations
+all_recipes = np.empty((0,8), str)
+pizza = np.array([['pizza','4','2','5t','3','5s','8','9']])
+vegetable_soup = np.array([['vegetable soup','2','2','3','5','9']])
+pasta = np.array([['pasta','5p','3','2','5t','3','5s','9']])
+#recipe declarations
 controller_speech = '0'
-# globals
-
 # player imaging class
 
 
@@ -159,42 +162,6 @@ class Playerimg():
 # player imaging class
 
 # pygame base code
-
-
-# set title on window
-pygame.display.set_caption("Chopping")
-
-# load images
-bg_img = pygame.image.load('images/kitchen_half.png')
-bg_img = pygame.transform.scale(bg_img, windowsize)
-bg_chopping = pygame.image.load('backgrounds/cuttingboard.png')
-bg_chopping = pygame.transform.scale(bg_chopping, windowsize)
-bg_stove = pygame.image.load('backgrounds/stove.png')
-bg_stove = pygame.transform.scale(bg_stove, windowsize)
-bg_pour = pygame.image.load('backgrounds/tile.png')
-bg_pour = pygame.transform.scale(bg_pour, windowsize)
-
-vs_score = pygame.image.load('images/score_page.png')
-vs_score_opp = pygame.image.load('images/score_page_opp.png')
-
-calimg = pygame.image.load('images/calibration_instructions.png')
-modimg = pygame.image.load('images/game_mode_selection.png')
-playimg = pygame.image.load('images/player_selection.png')
-
-# videos
-pygame.init()
-pygame.mixer.quit()
-intro = moviepy.editor.VideoFileClip('images/welcome_screen.mp4')
-loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
-modvid = moviepy.editor.VideoFileClip('images/game_mode_selection_vid.mp4')
-calvid = moviepy.editor.VideoFileClip(
-    'images/calibration_instructions_vid.mp4')
-countdown = moviepy.editor.VideoFileClip('images/3_2_1.mp4')
-playvid = moviepy.editor.VideoFileClip('images/player_selection_vid.mp4')
-play1vid = moviepy.editor.VideoFileClip('images/player_1_selected.mp4')
-play2vid = moviepy.editor.VideoFileClip('images/player_2_selected.mp4')
-# videos
-
 # fonts
 # pygame.font.init()
 myfont = pygame.font.SysFont('Bukhari Script.ttf', 40)
@@ -206,6 +173,23 @@ completion = smallFont.render(
     'You have completed this task!', False, (0, 0, 0))
 # fonts
 
+def recipe_randomizer(difficulty):
+    global all_recipes
+    #length = len(all_recipes[0])
+    global recipe_count
+    recipe_count = 0
+    if difficulty == 'hard':
+        recipe_count = 5
+    elif difficulty == 'normal':
+        recipe_count = 4
+    elif difficulty =='easy':
+        recipe_count = 3
+    for k in range(recipe_count):
+        recipe = random.randint(1,2)  #randomization, will be replaced with a shuffle command (random.shuffle())
+        if recipe == 1:
+            all_recipes = np.append(all_recipes, pizza, axis=0)
+        elif recipe == 2:
+            all_recipes = np.append(all_recipes, pasta, axis=0)
 
 def task(action, msg_begin):
     global speed
@@ -235,17 +219,23 @@ def task(action, msg_begin):
     t.sleep(1)
     return
 
-
-def classifier(num):  # classify for user output
+def classifier(num):    #classify for user output
     global current_goal
     if int(num) == int(FLAG_CUTTING):
         output = 'Cut'
     elif int(num) == int(FLAG_STIR):
         output = 'Stir'
+    elif int(num) == int(FLAG_ROLLING):
+        output = 'Roll'
+    elif int(num) == int(FLAG_POURING):
+        output = 'Pour'
+    elif int(num) == int(FLAG_SHRED):
+        output = 'Shred'
+    elif int(num) == int(FLAG_GARNISH):
+        output = 'Garnish'
     elif int(num) == 0:
         output = 'DONE'
     return output
-
 
 def load_vid(pathname):
     global current_images
@@ -254,19 +244,9 @@ def load_vid(pathname):
         current_images.append(pygame.image.load(i))
     return len(current_images)
 
-
 def main():
-    y = 10
-    while y == 10:
-        print(y)
-        if y == 10:
-            y = 11
-            if y == 11:
-                y = 10
-                continue
-                y = 11
-            y = 11
-        y = 11
+    recipe_randomizer('easy')
+    print(len(all_recipes[0][0]))
 
 
 main()
