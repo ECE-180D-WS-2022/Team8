@@ -65,6 +65,11 @@ AZ_ROLL_THRESH_TOP = 0.7	#max - min Az must be smaller than this value to regist
 GOOD_ROLL_THRESH = 1
 DECENT_ROLL_THRESH = 4
 
+total_Ax = 0
+total_Az = 0
+goal_Az = -100
+goal_Ax_before = 60
+goal_Ax_after = 30
 pour_status_flag = 0	#0 means start pouring, 1 means in process of pouring, 2 means finished pouring, 3 means finished action
 
 SAUTE_SENSITIVITY_SCALING = 0
@@ -150,7 +155,7 @@ MPU_Init()
 #Initialize push button
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
-GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#Set pin 10 to be an input pin and set init. value to be pulled low (off)
+#GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#Set pin 10 to be an input pin and set init. value to be pulled low (off)
 GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#Same for pin 11
 
 #connect to MQTT
@@ -169,7 +174,7 @@ for i in range(COUNTER_THRESH):
 	Ay_arr.append(i)
 	Ax_arr.append(i)
 
-for i in range(ROLL_COUNTER_THRESH)
+for i in range(ROLL_COUNTER_THRESH):
 	Gx_roll_arr.append(i)
 	Gy_roll_arr.append(i)
 	Gz_roll_arr.append(i)
@@ -209,7 +214,39 @@ while True:	#continuously loop, even if don't need to collect data
 		client.publish('2Team8C', byteArray)
 		speech_flag = 0	#reset speech flags after recording
 		speech_recording_flag = 0
+		print("wav sent")
 	while op_status != '00':        #Perform operation set by op_status
+		while GPIO.input(11) == GPIO.HIGH:
+			if speech_flag == 0:    #setup audio collection channel 
+				p = pyaudio.PyAudio()   #Create interface to PortAudio
+				stream = p.open(format = sample_format, channels = channels, rate = fs, frames_per_buffer = chunk, input = True)
+				frames = []     #Array to store frames
+				speech_flag = 1
+			data = stream.read(chunk, exception_on_overflow = False)
+			frames.append(data)
+			speech_recording_flag = 1
+		if speech_recording_flag == 1:  #just finished recording data
+                  	#stop and close stream
+			stream.stop_stream()
+			stream.close()
+                        #Terminate PortAudio interface
+			p.terminate()
+
+			wf = wave.open(filename, 'wb')
+			wf.setnchannels(channels)
+			wf.setsampwidth(p.get_sample_size(sample_format))
+			wf.setframerate(fs)
+			wf.writeframes(b''.join(frames))
+			wf.close()
+
+			f = open("test.wav", "rb")
+			imagestring = f.read()
+			f.close()
+			byteArray = bytearray(imagestring)
+			client.publish('2Team8C', byteArray)
+			speech_flag = 0 #reset speech flags after recording
+			speech_recording_flag = 0
+			print("wav sent")
 		#Read Accelerometer raw value
 		acc_x = read_raw_data(ACCEL_XOUT_H)
 		acc_y = read_raw_data(ACCEL_YOUT_H)
@@ -229,7 +266,7 @@ while True:	#continuously loop, even if don't need to collect data
 		Gy = gyro_y/131.0
 		Gz = gyro_z/131.0
 		
-		if op_status == '02':	#chop and grate
+		if op_status == '02' or op_status == '08':	#chop and grate
 			Gz_arr[counter] = Gz
 			Gy_arr[counter] = Gy
 			Gx_arr[counter] = Gx
@@ -293,7 +330,7 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 					'''
 				counter = 0	#reset counter after operation with memory
-		elif op_status == '04'	#roll and garnish
+		elif op_status == '04' or op_status == '09':	#roll and garnish
 			Gz_roll_arr[counter] = Gz
 			Gy_roll_arr[counter] = Gy
 			Gx_roll_arr[counter] = Gx
@@ -336,52 +373,58 @@ while True:	#continuously loop, even if don't need to collect data
 					else:
 						curr_score = 1
 				counter = 0
-		elif op_status == '05'	#pour
+		elif op_status == '05':	#pour
 			if (pour_status_flag == 0):	#before start pouring, setup
 				if (Ax < 1.3 and Ax > 0.99):	#Ax correctly facing down
 					curr_score = 0	#for pour, return 0 when finished with setup stage
 					total_Ax = total_Ax + Ax
+					print(total_Ax)
 			elif (pour_status_flag == 1):
 				if (Az > -1 and Az < -0.8):	#-Az correctly facing down
-					curr_score = 1	#return 1 when finished with stage 1
 					total_Az = total_Az + Az
+					print(total_Az)
 			elif (pour_status_flag == 2):
 				if (Ax < 1.3 and Ax > 0.99):	#Ax returned to original position
-					curr_score = 2	#return 2 when finished with stage 2
 					total_Ax = total_Ax + Ax
+					print(total_Ax)
 
 			if (total_Ax >= goal_Ax_before and pour_status_flag == 0):	#start actual pouring process
 				#print('stat 1')
 				pour_status_flag = 1
+				curr_score = 1
 			elif (total_Az <= goal_Az and pour_status_flag == 1):	#finish up actual pouring process
 				#print('stat 2')
 				pour_status_flag = 2
 				total_Ax = 0
+				curr_score = 2
 			elif (total_Ax >= goal_Ax_after and pour_status_flag == 2):	#finish up motion
+				total_Ax = 0
+				total_Az = 0
+				pour_status_flag = 0
 				curr_score = 3	#return 3 when action completely finished
-		elif op_status == '06' #saute
+		elif op_status == '06': #saute
 			Gz_roll_arr[counter] = Gz
-                        Gy_roll_arr[counter] = Gy
-                        Gx_roll_arr[counter] = Gx
-                        Az_roll_arr[counter] = Az
-                        Ay_roll_arr[counter] = Ay
-                       	Ax_roll_arr[counter] = Ax
+			Gy_roll_arr[counter] = Gy
+			Gx_roll_arr[counter] = Gx
+			Az_roll_arr[counter] = Az
+			Ay_roll_arr[counter] = Ay
+			Ax_roll_arr[counter] = Ax
 			counter += 1
 			if counter == ROLL_COUNTER_THRESH:	#same speed of return as roll function
 				max_Az = max(Az_roll_arr)
-                                max_Ay = max(Ay_roll_arr)
-                                max_Ax = max(Ax_roll_arr)
-                                min_Az = min(Az_roll_arr)
-                                min_Ay = min(Ay_roll_arr)
-                                min_Ax = min(Ax_roll_arr)
+				max_Ay = max(Ay_roll_arr)
+				max_Ax = max(Ax_roll_arr)
+				min_Az = min(Az_roll_arr)
+				min_Ay = min(Ay_roll_arr)
+				min_Ax = min(Ax_roll_arr)
 
-                                avg_Gx = sum(Gx_roll_arr) / len(Gx_roll_arr)
-                                avg_Gy = sum(Gy_roll_arr) / len(Gy_roll_arr)
-                                avg_Gz = sum(Gz_roll_arr) / len(Gz_roll_arr)
+				avg_Gx = sum(Gx_roll_arr) / len(Gx_roll_arr)
+				avg_Gy = sum(Gy_roll_arr) / len(Gy_roll_arr)
+				avg_Gz = sum(Gz_roll_arr) / len(Gz_roll_arr)
         
-                                avg_Ax = sum(Ax_roll_arr) / len(Ax_roll_arr)
-                                avg_Ay = sum(Ay_roll_arr) / len(Ay_roll_arr)
-                                avg_Az = sum(Az_roll_arr) / len(Az_roll_arr)
+				avg_Ax = sum(Ax_roll_arr) / len(Ax_roll_arr)
+				avg_Ay = sum(Ay_roll_arr) / len(Ay_roll_arr)
+				avg_Az = sum(Az_roll_arr) / len(Az_roll_arr)
 				if abs(Az) > abs(Ax)-SAUTE_SENSITIVITY_SCALING and abs(Az) > abs(Ay)-SAUTE_SENSITIVITY_SCALING:	
 					#print('correct side down')
 					if abs(max_Ay) + abs(min_Ay) > SAUTE_THRESH and avg_Az > 1.1 and avg_Az < 1.3:
