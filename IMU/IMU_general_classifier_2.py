@@ -68,7 +68,7 @@ DECENT_ROLL_THRESH = 4
 total_Ax = 0
 total_Az = 0
 goal_Az = -100
-goal_Ax_before = 100
+goal_Ax_before = 60
 goal_Ax_after = 30
 pour_status_flag = 0	#0 means start pouring, 1 means in process of pouring, 2 means finished pouring, 3 means finished action
 
@@ -243,7 +243,7 @@ while True:	#continuously loop, even if don't need to collect data
 			imagestring = f.read()
 			f.close()
 			byteArray = bytearray(imagestring)
-			client.publish('1Team8C', byteArray)
+			client.publish('2Team8C', byteArray)
 			speech_flag = 0 #reset speech flags after recording
 			speech_recording_flag = 0
 			print("wav sent")
@@ -266,7 +266,7 @@ while True:	#continuously loop, even if don't need to collect data
 		Gy = gyro_y/131.0
 		Gz = gyro_z/131.0
 		
-		if op_status == '02':	#chop and grate
+		if op_status == '02' or op_status == '08':	#chop and grate
 			Gz_arr[counter] = Gz
 			Gy_arr[counter] = Gy
 			Gx_arr[counter] = Gx
@@ -330,7 +330,7 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 					'''
 				counter = 0	#reset counter after operation with memory
-		elif op_status == '04':	#roll and garnish
+		elif op_status == '04' or op_status == '09':	#roll and garnish
 			Gz_roll_arr[counter] = Gz
 			Gy_roll_arr[counter] = Gy
 			Gx_roll_arr[counter] = Gx
@@ -374,28 +374,33 @@ while True:	#continuously loop, even if don't need to collect data
 						curr_score = 1
 				counter = 0
 		elif op_status == '05':	#pour
-			print(pour_status_flag)
 			if (pour_status_flag == 0):	#before start pouring, setup
 				if (Ax < 1.3 and Ax > 0.99):	#Ax correctly facing down
 					curr_score = 0	#for pour, return 0 when finished with setup stage
 					total_Ax = total_Ax + Ax
+					print(total_Ax)
 			elif (pour_status_flag == 1):
 				if (Az > -1 and Az < -0.8):	#-Az correctly facing down
-					curr_score = 1	#return 1 when finished with stage 1
 					total_Az = total_Az + Az
+					print(total_Az)
 			elif (pour_status_flag == 2):
 				if (Ax < 1.3 and Ax > 0.99):	#Ax returned to original position
-					curr_score = 2	#return 2 when finished with stage 2
 					total_Ax = total_Ax + Ax
+					print(total_Ax)
 
 			if (total_Ax >= goal_Ax_before and pour_status_flag == 0):	#start actual pouring process
 				#print('stat 1')
 				pour_status_flag = 1
+				curr_score = 1
 			elif (total_Az <= goal_Az and pour_status_flag == 1):	#finish up actual pouring process
 				#print('stat 2')
 				pour_status_flag = 2
 				total_Ax = 0
+				curr_score = 2
 			elif (total_Ax >= goal_Ax_after and pour_status_flag == 2):	#finish up motion
+				total_Ax = 0
+				total_Az = 0
+				pour_status_flag = 0
 				curr_score = 3	#return 3 when action completely finished
 		elif op_status == '06': #saute
 			Gz_roll_arr[counter] = Gz
