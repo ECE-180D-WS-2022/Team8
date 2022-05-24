@@ -69,8 +69,8 @@ DECENT_ROLL_THRESH = 4
 total_Ax = 0
 total_Az = 0
 goal_Az = -100
-goal_Ax_before = 60
-goal_Ax_after = 30
+goal_Ax_before = 20
+goal_Ax_after = 10
 pour_status_flag = 0	#0 means start pouring, 1 means in process of pouring, 2 means finished pouring, 3 means finished action
 
 SAUTE_SENSITIVITY_SCALING = 0
@@ -384,6 +384,8 @@ while True:	#continuously loop, even if don't need to collect data
 							curr_score = 2
 					else:
 						curr_score = 1
+				else:
+					curr_score = 0
 				counter = 0
 		elif op_status == '05':	#pour
 			if (pour_status_flag == 0):	#before start pouring, setup
@@ -450,6 +452,8 @@ while True:	#continuously loop, even if don't need to collect data
 					else:
 						#print ('meh chopping')
 						curr_score = 1
+				else:
+					curr_score = 0
 				counter = 0
 		if prev_score != curr_score:	#when see a new score, send update to CPU
 			prev_score = curr_score
