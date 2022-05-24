@@ -43,6 +43,7 @@ filename = 'test.wav'
 
 speech_flag = 0	#0 means will setup speech channel, 1 means have already set it up
 speech_recording_flag = 0	#0 means haven't recorded anything, 1 means recording waiting to be sent
+taunt_button = 0	#taunt button pressed to send a taunt
 
 #GLOBAL CONSTANTS
 CHOP_SENSITIVITY_SCALING = 0
@@ -156,7 +157,8 @@ MPU_Init()
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 #GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#Set pin 10 to be an input pin and set init. value to be pulled low (off)
-GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#Same for pin 11
+GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#push to talk button
+GPIO.setup(13, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)	#taunt button
 
 #connect to MQTT
 client = mqtt.Client()
@@ -215,6 +217,11 @@ while True:	#continuously loop, even if don't need to collect data
 		speech_flag = 0	#reset speech flags after recording
 		speech_recording_flag = 0
 		print("wav sent")
+	while GPIO.input(13) == GPIO.HIGH:
+		taunt_button = 1
+	if taunt_button == 1:
+		client.publish('2Team8A', '070')	#taunt sent
+		taunt_button = 0	#reset taunt button status to zero, no longer pressed
 	while op_status != '00':        #Perform operation set by op_status
 		while GPIO.input(11) == GPIO.HIGH:
 			if speech_flag == 0:    #setup audio collection channel 
@@ -247,6 +254,11 @@ while True:	#continuously loop, even if don't need to collect data
 			speech_flag = 0 #reset speech flags after recording
 			speech_recording_flag = 0
 			print("wav sent")
+		while GPIO.input(13) == GPIO.HIGH:
+			taunt_button = 1
+		if taunt_button == 1:
+			client.publish('2Team8A', '070')        #taunt sent
+			taunt_button = 0        #reset taunt button status to zero, no longer pressed
 		#Read Accelerometer raw value
 		acc_x = read_raw_data(ACCEL_XOUT_H)
 		acc_y = read_raw_data(ACCEL_YOUT_H)
@@ -444,7 +456,7 @@ while True:	#continuously loop, even if don't need to collect data
 			message = op_status + str(curr_score)	#format: "023" means chopping (02) got a return score of 3
 			print(message)
 			client.publish('2Team8A', message, qos=2)
-			sleep(1)
+			sleep(0.03)
         #reset score variables when done with each operation
 	prev_score = 0
 	curr_score = 0
