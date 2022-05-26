@@ -81,5 +81,5 @@ class Playerimg():
 			self.rect.bottom = SCREEN_HEIGHT
 			dy = 0
 		
-		win.blit(self.image, self.rect)
+
 #player imaging class
