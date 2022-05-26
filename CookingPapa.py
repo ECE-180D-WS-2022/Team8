@@ -460,13 +460,13 @@ def print_recipes():
     for k in range(len(all_recipes)):
         if all_recipes[k][0] != '0':
             can_break = 1
-            msg_recipe = myfont.render('Recipe '+str(k+1)+ ': ' + str(all_recipes[k][0]),False,(0,0,0))
-            win.blit(msg_recipe,(50,50))
+            msg_recipe = myfont.render('Recipe '+str(k+1)+ ' of ' + str(recipe_count) + ' ' + str(all_recipes[k][0]).upper() + '!',False,(0,0,0))
+            win.blit(msg_recipe,(10,10))
             for i in range(1,length):
                 action = naming(int(all_recipes[k][i][0]),1) 
                 station = naming(int(all_recipes[k][i][2]),2)
-                msg_action = myfont.render(str(i)+'. ' + action + ' at '+ station + '!', False,(0,0,0))
-                win.blit(msg_action,(100,50+50*i))
+                msg_action = myfont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
+                win.blit(msg_action,(10,10+30*i))
         if can_break == 1:
             break       #only print the next available recipe
 
@@ -478,7 +478,7 @@ def classifier(str):    #classify for user output
 
 def naming(num,type):
     action = 'Cut' if num == 2 else 'Stir' if num == 3 else 'Roll' if num == 4 else 'Pour' if num == 5 else 'Shred' if num == 8 else 'Garnish'
-    station = 'plate' if num == 1 else 'stove' if num == 2 else 'cutting board' if num == 3 else 'counter'
+    station = 'counter' if num == 1 else 'board' if num == 2 else 'stove' if num == 3 else 'plate'
     if type == 1:
         return action
     elif type == 2:
