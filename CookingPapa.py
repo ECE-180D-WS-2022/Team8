@@ -460,13 +460,13 @@ def print_recipes():
     for k in range(len(all_recipes)):
         if all_recipes[k][0] != '0':
             can_break = 1
-            msg_recipe = myfont.render('Recipe '+str(k+1)+ ' of ' + str(recipe_count) + ' ' + str(all_recipes[k][0]).upper() + '!',False,(0,0,0))
-            win.blit(msg_recipe,(10,10))
+            msg_recipe = myfont.render(str(k+1)+ ' of ' + str(recipe_count) + ': ' + str(all_recipes[k][0]).upper() + '!',False,(0,0,0))
+            win.blit(msg_recipe,(25,10))
             for i in range(1,length):
                 action = naming(int(all_recipes[k][i][0]),1) 
                 station = naming(int(all_recipes[k][i][2]),2)
-                msg_action = myfont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
-                win.blit(msg_action,(10,10+30*i))
+                msg_action = smallFont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
+                win.blit(msg_action,(25,30+25*i))
         if can_break == 1:
             break       #only print the next available recipe
 
@@ -1012,15 +1012,15 @@ if __name__ == '__main__':
     #videos
 
     #fonts
-    #pygame.font.init()
-    myfont = pygame.font.SysFont('Bukhari Script.ttf', 40)
+    pygame.font.init()
+    myfont = pygame.font.Font('Georgia.ttf', 30)
     msg_plate = myfont.render('Say cheese or garnish to start', False, (0,0,0))
     msg_stove = myfont.render('Say spoon to start', False, (0,0,0))
     msg_cuttingboard = myfont.render('Say knife or roll to start', False, (0,0,0))
     msg_counter = myfont.render('Say pour to start', False, (0,0,0))
     msg_exit = myfont.render('Say exit to return', False, (0,0,0))
     msg_good = myfont.render('Good job!', False, (0,0,0))
-    smallFont = pygame.font.SysFont('Bukhari Script.ttf', 30)
+    smallFont = pygame.font.Font('Georgia.ttf', 25)
     completion= smallFont.render('You have completed this task!', False, (0,0,0))
     current_msg = myfont.render('Say spoon to start', False, (0,0,0))
     #fonts
