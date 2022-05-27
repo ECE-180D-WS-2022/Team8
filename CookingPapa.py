@@ -1,4 +1,5 @@
 from email import message
+from email.iterators import walk
 from multiprocessing.dummy import freeze_support
 from pickle import FALSE
 from ssl import ALERT_DESCRIPTION_BAD_CERTIFICATE_HASH_VALUE
@@ -30,6 +31,7 @@ FLAG_ROLLING = '04'
 FLAG_POURING = '05'
 FLAG_SHRED = '08'
 FLAG_GARNISH = '09'
+FLAG_RECEIVE = '11'
 STOP = '00'
 SCRAMBLE = '13'
 SWITCH = '14'
@@ -53,6 +55,8 @@ stove = 2
 
 #globals
 time_bonus = 0
+walk_s = 0
+walk_memory = 0
 recipe_count = 0
 position = 0    #will be 1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 in_cooking = 0
@@ -130,7 +134,7 @@ class Playerimg():
 		self.index = 0
 		self.counter = 0
 		for num in range(1, 5):
-			img_right = pygame.image.load(f'images/chef{num}.png')
+			img_right = pygame.image.load(f'images/chef/chef{num}.png')
 			img_right = pygame.transform.scale(img_right, (300, 600))
 			img_left = pygame.transform.flip(img_right, True, False)
 			self.images_right.append(img_right)
@@ -144,30 +148,47 @@ class Playerimg():
 		self.direction = 0
 
 	def update(self):
+		global walk_s
+		global walk_memory
+		walk_s+=1
 		dx = 0
 		dy = 0
 		walk_cooldown = 5
 
         #moving left
-		if (self.rect.x - x_pos) < 0:
+		if (self.rect.x+150 - x_pos) < -18:
+			dx -= 5
 			self.counter += 1
-			self.direction = -1
+			self.direction = 1
 		#moving right
-		if (self.rect.x - x_pos) > 0:
+		elif (self.rect.x+150 - x_pos) > 18 and x_pos >=200:
+			dx += 5
 			self.counter += 1
 			self.direction = -1
+
+
+		#print(str(self.rect.x+150) +" " + str(x_pos))
+		#print(str(x_pos))
+		#print('direction: '+ str(self.direction))
 
 		#handle animation
-		if self.counter > walk_cooldown:
-			self.counter = 0	
-			self.index += 1
-			if self.index >= len(self.images_right):
-				self.index = 0
-			if self.direction == 1:
-				self.image = self.images_right[self.index]
-			if self.direction == -1:
-				self.image = self.images_left[self.index]
 
+		if (walk_s==3):
+			if abs(walk_memory+self.rect.x+150 - x_pos)/2>9:
+				self.counter = 0	
+				self.index += 1
+				if self.index >= len(self.images_right):
+					self.index = 0
+				if self.direction == 1:
+					self.image = self.images_right[self.index]
+				if self.direction == -1:
+					self.image = self.images_left[self.index]
+			elif self.index == 1 or self.index==3:
+				if self.direction == 1:
+					self.image = self.images_right[2]
+				if self.direction == -1:
+					self.image = self.images_left[2]
+			walk_s=0
 
 		#add gravity
 		self.vel_y += 1
@@ -179,12 +200,15 @@ class Playerimg():
 
 		#update player 
 		#print(dx)
+		walk_memory = self.rect.x+150 - x_pos
 		self.rect.x = x_pos - 150
 		self.rect.y += dy
 
 		if self.rect.bottom > SCREEN_HEIGHT:
 			self.rect.bottom = SCREEN_HEIGHT
 			dy = 0
+		
+
 #player imaging class
 
 #fonts           
@@ -346,9 +370,8 @@ def task(action):
 
     #Beginning of task code
     t.sleep(CONTROLLER_BUFFER)
-    timer_set = 1
     action = int(action)
-    string_action = naming(action)
+    string_action = naming(action,1)
     win = pygame.display.set_mode(windowsize)
     #if elif statements]
     if area_to_go == '1' or area_to_go == '4':
@@ -387,8 +410,6 @@ def task(action):
     win.blit(current_images[0],(0,0))
     pygame.display.update()
     for i in current_images:
-        while speed == 0:
-            pass #dont let it run if speed = 0
         #print('Working '+str(i))
         feedback = 'This aint it' if speed == 1 else 'Ok' if speed == 2 else 'OK GORDON RAMSEY' if speed == 3 else 'Learn to cook'
         win.blit(current_bg,(0,0))
@@ -396,10 +417,11 @@ def task(action):
         pygame.display.update()
         if speed != 0:
             t.sleep(0.05/speed)
+        while speed == 0:
+            t.sleep(.05)
 
     #ending of task code
     last_action = action
-    timer_set = 0 
     return
 
 def displayScore(score, opponent_score, feedback):
@@ -463,9 +485,12 @@ def print_recipes():
             msg_recipe = myfont.render(str(k+1)+ ' of ' + str(recipe_count) + ': ' + str(all_recipes[k][0]).upper() + '!',False,(0,0,0))
             win.blit(msg_recipe,(25,10))
             for i in range(1,length):
-                action = naming(int(all_recipes[k][i][0]),1) 
-                station = naming(int(all_recipes[k][i][2]),2)
-                msg_action = smallFont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
+                action = naming(int(all_recipes[k][i][0]),1)
+                if len(all_recipes[k][i]) == 3: 
+                    station = naming(int(all_recipes[k][i][2]),2)
+                    msg_action = smallFont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
+                else:
+                    msg_action = smallFont.render(str(i)+'. ' + action + '!', False,(0,0,0))
                 win.blit(msg_action,(25,30+25*i))
         if can_break == 1:
             break       #only print the next available recipe
@@ -475,9 +500,12 @@ def classifier(str):    #classify for user output
     action_to_do = str[0]
     ingr_to_do = str[1]
     area_to_go = str[2]
+    print(action_to_do)
+    print(ingr_to_do)
+    print(area_to_go)
 
 def naming(num,type):
-    action = 'Cut' if num == 2 else 'Stir' if num == 3 else 'Roll' if num == 4 else 'Pour' if num == 5 else 'Shred' if num == 8 else 'Garnish'
+    action = 'Cut' if num == 2 else 'Stir' if num == 3 else 'Roll' if num == 4 else 'Pour' if num == 5 else 'Shred' if num == 8 else 'Garnish' if num == 9 else 'Done'
     station = 'counter' if num == 1 else 'board' if num == 2 else 'stove' if num == 3 else 'plate'
     if type == 1:
         return action
@@ -524,48 +552,15 @@ def on_message(client, userdata, message):
     #print(temporary)
     #print(message_received)
     #score flag received
-    if (str(flag_received) == str(FLAG_STIR)):
+    if (str(flag_received) == str(FLAG_RECEIVE)):
         if int(message_received) == 1:
             speed = meh
         elif int(message_received) == 2:
             speed = good
         elif int(message_received) == 3:
             speed = excellent
-    elif (str(flag_received) == str(FLAG_CUTTING)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_POURING)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_ROLLING)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_SHRED)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_GARNISH)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
+        elif int(message_received) == 0:
+            speed = 0
     elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
             if 1000-float(score) > 1000-float(message_received):
@@ -640,15 +635,15 @@ def temp_speech():
 #########################
 
 def multi_timer(timer_type,conn):
-    global timer_time
     while True:
-        timer_set = conn.recv()
+        timer_set = int(conn.recv())
         if timer_type == str(1): #space for other timer types
         #Starting a normal timer
             index = 0
             while(timer_set == 1): #only reset timer IF timer_set is run, otherwise dont 
-                t.sleep(1)
-                index = index+1
+                t.sleep(.5)
+                index = index + .5
+                timer_set = int(conn.recv())
             if(timer_set == 0):
                 conn.send(index)
                 print(index)
@@ -681,6 +676,7 @@ def main():
     global current_msg
     global current_recipe
     global speech_said
+    global action_to_do, area_to_go, ingr_to_do
     #####################
     #GLOBAL DECLARATIONS
     #####################
@@ -701,7 +697,8 @@ def main():
     #MULTIPROCESSING CALL
     ################
     conn1, conn2 = Pipe()
-    timers = Process(target = multi_timer, args=(1,conn2))
+    timers = Process(target = multi_timer, args=("1",conn2))
+    timers.daemon = True
     timers.start()
     ################
     #MULTIPROCESSING CALL
@@ -786,6 +783,8 @@ def main():
                 #will only trigger/pause the code if speech is detected to have been said
             if speech_said == True:
                 txt = from_speech()
+                if 'o' in txt or 'g' in txt:
+                    txt = 'go'
                 if txt == 'go' or txt == 'no':
                     next_action()
                     if x_pos > 900:
@@ -839,7 +838,6 @@ def main():
             txt = '0'
             screen.blit(bg_tile,(0,0))
             screen.blit(msg_plate,(50,50))
-            screen.blit(msg_exit,(900,50))
             pygame.display.update()
             action = '0'
             while txt.lower() != 'cheese' and txt.lower() != 'garnish':
@@ -864,17 +862,16 @@ def main():
             txt = '0'
             screen.blit(bg_stove,(0,0))
             screen.blit(msg_stove,(50,50))
-            screen.blit(msg_exit,(900,50))
             pygame.display.update()
             action = '0'
-            while txt.lower() != 'spoon' and txt.lower() != 'pour':
+            while txt.lower() != 'stir' and txt.lower() != 'pour':
                 if speech_said == True:
                     txt = from_speech()
-                    if 'o' in txt:
-                        txt = 'spoon'
-                    elif txt == 'poor' or txt == '4':
+                    if 'st' in txt:
+                        txt = 'stir'
+                    elif txt == 'poor' or txt == '4' or txt == 'port':
                         txt = 'pour'
-                    if txt.lower() == 'spoon' and int(action_to_do) == int(FLAG_STIR): 
+                    if txt.lower() == 'stir' and int(action_to_do) == int(FLAG_STIR): 
                         action = FLAG_STIR
                     elif txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
                         action = FLAG_POURING
@@ -893,7 +890,6 @@ def main():
             txt = '0'
             screen.blit(bg_cuttingboard,(0,0))
             screen.blit(msg_cuttingboard,(50,50))
-            screen.blit(msg_exit,(900,50))
             pygame.display.update()
             action = '0'
             while txt.lower() != 'knife' and txt.lower() != 'roll':
@@ -922,7 +918,6 @@ def main():
             txt = '0'
             screen.blit(bg_tile,(0,0))
             screen.blit(msg_counter,(50,50))
-            screen.blit(msg_exit,(900,50))
             pygame.display.update()
             action = '0'
             while txt.lower() != 'pour':
@@ -976,8 +971,9 @@ def main():
 if __name__ == '__main__':
     freeze_support()
     load_vids()
-    background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
-    background_music.start()
+    #background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
+    #background_music.daemon = True
+    #background_music.start()
     client = mqtt.Client()
     windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
     win=pygame.display.set_mode(windowsize)
@@ -1015,7 +1011,7 @@ if __name__ == '__main__':
     pygame.font.init()
     myfont = pygame.font.Font('Georgia.ttf', 30)
     msg_plate = myfont.render('Say cheese or garnish to start', False, (0,0,0))
-    msg_stove = myfont.render('Say spoon to start', False, (0,0,0))
+    msg_stove = myfont.render('Say stir or pour to start', False, (0,0,0))
     msg_cuttingboard = myfont.render('Say knife or roll to start', False, (0,0,0))
     msg_counter = myfont.render('Say pour to start', False, (0,0,0))
     msg_exit = myfont.render('Say exit to return', False, (0,0,0))
