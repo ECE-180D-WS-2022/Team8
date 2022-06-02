@@ -435,7 +435,7 @@ def task(action):
 
         win.blit(current_bg,(0,0))
         win.blit(i,(0,0))
-        win.blit(feedback_msg,(500,50))
+        win.blit(feedback_msg,(900,50))
         pygame.display.update()
         if speed != 0:
             t.sleep(0.05/speed)
@@ -493,10 +493,47 @@ def displayScore():
         win.blit(finalscoreimg,(0,0))
         win.blit(msg_finalscore,(470,400))
         pygame.display.update()
-        t.sleep(10)
     elif practice_flag == 0:
-
-        t.sleep(10)
+        opp_final_score = (500 - opp_score) + (opp_time_bonus * 10) + opp_excellency_bonus - (opp_sabotage_penalty * 10)
+        opp_final_score = int(opp_final_score)
+        opp_time_bonus = '+ ' + str(opp_time_bonus) + ' x 10'
+        opp_sabotage_penalty = '- ' + str(opp_sabotage_penalty) + ' x 10'
+        opp_excellency_bonus = '+ ' + str(int(opp_excellency_bonus))
+        opp_score = str(int(opp_score)) + ' s'
+        msg_opp_time_bonus = scorefont.render(str(opp_time_bonus),False,(236, 233, 218))
+        msg_opp_time_bonus2 = scorefont.render(str(opp_time_bonus),False,(187, 56, 49))
+        msg_opp_excellency_bonus = scorefont.render(str(opp_excellency_bonus),False,(236, 233, 218))
+        msg_opp_excellency_bonus2 = scorefont.render(str(opp_excellency_bonus),False,(187, 56, 49))
+        msg_opp_sabotage_penalty = scorefont.render(str(opp_sabotage_penalty),False,(236, 233, 218))
+        msg_opp_sabotage_penalty2 = scorefont.render(str(opp_sabotage_penalty),False,(187, 56, 49))
+        msg_opp_score = scorefont.render(str(opp_score),False,(236, 233, 218))
+        msg_opp_score2 = scorefont.render(str(opp_score),False,(187, 56, 49))
+        msg_opp_finalscore = finalfont.render(str(opp_final_score), False, (236, 233, 218))
+        opp_scoring_vid0.preview()
+        win.blit(opp_scorebreakimg,(0,0))
+        pygame.display.update()
+        win.blit(msg_opp_time_bonus2,(590,265))
+        win.blit(msg_opp_time_bonus,(585,260))
+        t.sleep(1)
+        pygame.display.update()
+        win.blit(msg_opp_excellency_bonus2,(815,388))
+        win.blit(msg_opp_excellency_bonus,(810,383))
+        t.sleep(1)
+        pygame.display.update()
+        win.blit(msg_opp_sabotage_penalty2,(805,508))
+        win.blit(msg_opp_sabotage_penalty,(800,503))
+        t.sleep(1)
+        pygame.display.update()
+        win.blit(msg_opp_score2,(555,633))
+        win.blit(msg_opp_score,(550,628))
+        t.sleep(1)
+        pygame.display.update()
+        t.sleep(2)
+        opp_scoring_vid1.preview()
+        win.blit(opponentimg,(0,0))
+        win.blit(msg_opp_finalscore,(900,400))
+        win.blit(msg_finalscore,(300,400))
+        pygame.display.update()
 
 def check_game():
     global all_recipes, current_recipe, timer_time, in_cooking, time_bonus
@@ -628,7 +665,6 @@ def on_message(client, userdata, message):
         elif int(message_received) == 0:
             speed = 0
     elif str(flag_received) == str(FLAG_SCORE):
-
         if in_cooking == 2:
             temp = str(message_received)
             tempadd = ''
@@ -649,6 +685,7 @@ def on_message(client, userdata, message):
                     tempadd = ''
             client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(int(score))+' '+str(int(sabotage_penalty))+' '+str(int(time_bonus))+' '+str(int(excellency_bonus)), qos=1)
         score_received = 1
+
     elif flag_received == str(MESSAGE):
         print(str(message_received))
     elif str(message.topic) == (str(flag_player)+'Team8C'):
@@ -749,6 +786,7 @@ def main():
     global current_recipe
     global speech_said
     global action_to_do, area_to_go, ingr_to_do
+    global practice_flag
     #####################
     #GLOBAL DECLARATIONS
     #####################
@@ -902,8 +940,10 @@ def main():
                     elif txt == 'switch' or txt == 'scramble':
                         sabotage_penalty = sabotage_penalty + 1 #increase sabotage penalty
                         if txt == 'scramble':
+                            sabatoge_send_vid.preview()
                             client.publish(str(flag_opponent)+'Team8', str(SCRAMBLE), qos=1)
                         elif txt == 'switch':
+                            sabatoge_send_vid.preview()
                             client.publish(str(flag_opponent)+'Team8', str(SWITCH), qos=1)
                     else:   #reset speech_said boolean
                         speech_said = False
@@ -952,7 +992,9 @@ def main():
                         txt = from_speech()
                         if 'st' in txt:
                             txt = 'stir'
-                        elif txt == 'poor' or txt == '4' or txt == 'port':
+                        elif txt == 'sir' or txt == 'her' or txt == 'dirt' or txt == 'ter':
+                            txt = 'stir'
+                        elif txt == 'poor' or txt == '4' or txt == 'port' or txt == 'for' or txt == 'spore':
                             txt = 'pour'
                         if txt.lower() == 'stir' and int(action_to_do) == int(FLAG_STIR): 
                             action = FLAG_STIR
@@ -980,7 +1022,7 @@ def main():
                 while txt.lower() != 'cut' and txt.lower() != 'roll':
                     if speech_said == True:
                         txt = from_speech()
-                        if 'u' in txt:
+                        if 'u' in txt or 'c' in txt:
                             txt = 'cut'
                         elif 'o' in txt:
                             txt = 'roll'
@@ -1010,7 +1052,7 @@ def main():
                 while txt.lower() != 'pour':
                     if speech_said == True:
                         txt = from_speech()
-                        if txt == 'poor' or txt == '4':
+                        if txt == 'poor' or txt == '4' or txt == 'for' or txt == 'spore' or txt == 'port':
                             txt = 'pour'
                         if txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
                             action = FLAG_POURING
@@ -1039,18 +1081,30 @@ def main():
         score = end_game-start_game
         #print('Your time was: ' + str(score))
         final_score = (500 - score) + (time_bonus * 10) + excellency_bonus - (sabotage_penalty * 10)
+        final_score = int(final_score)
         if practice_flag == 1:
             displayScore()
         else:
             client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(score)+' '+str(sabotage_penalty)+' '+str(time_bonus)+' '+str(excellency_bonus), qos=1)
             while score_received == 0:
+                loading.preview()
                 pass
             displayScore()
+            if final_score >= opp_final_score:
+                win_vid.preview()
+            else:
+                lose_vid.preview()
+        t.sleep(5)
         reset_vid.preview()
         txt = '0'
         speech_said = False
         while(txt.lower() != 'yes' and txt.lower() != 'no'):
             if speech_said == True:
+                txt = from_speech()
+                if 'e' in txt:
+                    txt = 'yes'
+                elif 'o' in txt:
+                    txt = 'no'
                 if txt.lower() == 'yes':
                     endloop = 0
                 elif txt.lower() == 'no':
@@ -1115,15 +1169,16 @@ if __name__ == '__main__':
     difficulty_sel_vid2 = moviepy.editor.VideoFileClip('images/difficulty_selection2.mp4')
     difficulty_sel_vid3 = moviepy.editor.VideoFileClip('images/difficulty_selection3.mp4')
     switch_rec_vid = moviepy.editor.VideoFileClip('images/switch_sabotage.mp4')
-    switch_send_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
-    scramble_rec_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
-    scramble_send_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    sabatoge_send_vid = moviepy.editor.VideoFileClip('images/send_sabotage.mp4')
+    scramble_rec_vid = moviepy.editor.VideoFileClip('images/scramble_sabotage.mp4')
     cut_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     stir_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     roll_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     pour_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     shred_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     garnish_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    win_vid = moviepy.editor.VideoFileClip('images/win.mp4')
+    lose_vid = moviepy.editor.VideoFileClip('images/lose.mp4')
     #videos
 
     #fonts
@@ -1136,10 +1191,11 @@ if __name__ == '__main__':
     msg_good = myfont.render('Good job!', False, (0,0,0))
     smallFont = pygame.font.Font('Georgia.ttf', 25)
     completion= smallFont.render('You have completed this task!', False, (0,0,0))
-    bad_feedback = myfont.render('Do you know how to cook???', False, (0,0,0))
-    good_feedback = myfont.render('Ok not bad, bad', False, (0,0,0))
-    excellent_feedback = myfont.render('OK GORDON RAMSEY', False, (0,0,0))
-    terrible_feedback = myfont.render('WRONG', False, (0,0,0))
+    feedbackfont = pygame.font.Font('Bukhari Script.ttf', 100)
+    bad_feedback = myfont.render('BAD', False, (0,0,0))
+    good_feedback = myfont.render('GOOD', False, (0,0,0))
+    excellent_feedback = myfont.render('EXCELLENT', False, (0,0,0))
+    terrible_feedback = myfont.render('BRUH', False, (0,0,0))
     feedback_msg = bad_feedback
     msg_go = myfont.render('Say go to enter', False, (0,0,0))
     #fonts
