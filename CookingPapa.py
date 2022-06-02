@@ -820,7 +820,7 @@ def main():
                 txt = from_speech()
                 if txt == 'brackets':  #common word
                     txt = 'practice'
-                if 'sh' in txt:
+                if 'sh' in txt or 'tion' in txt or 'cion' in txt:
                     txt = 'competition'
                 speech_said = False
         ################
@@ -844,7 +844,7 @@ def main():
             pygame.display.update()
             if speech_said == True:
                 txt = from_speech()
-                if txt.lower() == 'easy':
+                if txt.lower() == 'easy' or txt.lower() == 'idiot':
                     difficulty = 'easy'
                     difficulty_sel_vid1.preview()
                 elif txt.lower() == 'normal':
@@ -881,7 +881,7 @@ def main():
                 playerimg.update()
                 screen.blit(playerimg.image, playerimg.rect)
                 print_recipes()
-                screen.blit(msg_go,(1050, 50))
+                screen.blit(msg_go,(900, 50))
                 pygame.display.update()
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
@@ -955,6 +955,8 @@ def main():
                 while txt.lower() != 'shred' and txt.lower() != 'garnish':
                     if speech_said == True:
                         txt = from_speech()
+                        if txt.lower() == 'darkness' or txt.lower() == 'harness' or txt.lower() == 'tardis':
+                            txt = 'garnish'
                         if txt.lower() == 'shred' and int(action_to_do) == int(FLAG_SHRED): 
                             action = FLAG_SHRED
                             if practice_flag == 1:
