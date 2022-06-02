@@ -820,8 +820,12 @@ def main():
     #####################
     if flag_player == 1:
         play1vid.preview()
+        pygame.mixer.Sound.play(play1_sound)
+        pygame.mixer.music.stop()
     elif flag_player == 2:
         play2vid.preview()
+        pygame.mixer.Sound.play(play2_sound)
+        pygame.mixer.music.stop()
     client.subscribe(str(flag_player)+'Team8', qos=1)
     client.subscribe(str(flag_player)+'Team8A',qos=2)
     client.subscribe(str(flag_player)+'Team8C', qos = 1)
@@ -854,6 +858,11 @@ def main():
         practice_flag = 0
         if txt.lower() == 'practice':
             practice_flag = 1
+            pygame.mixer.Sound.play(prac_sound)
+            pygame.mixer.music.stop()
+        else:
+            pygame.mixer.Sound.play(compe_sound)
+            pygame.mixer.music.stop()
         #####################
         #WAITING FOR OPPONENT
         #####################
@@ -1158,9 +1167,9 @@ def main():
 if __name__ == '__main__':
     freeze_support()
     load_vids()
-    #background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
-    #background_music.daemon = True
-    #background_music.start()
+    background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
+    background_music.daemon = True
+    background_music.start()
     client = mqtt.Client()
     windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
     win=pygame.display.set_mode(windowsize)
@@ -1213,6 +1222,10 @@ if __name__ == '__main__':
     lose_vid = moviepy.editor.VideoFileClip('images/lose.mp4')
     #videos
 
+    play1_sound = pygame.mixer.Sound("player1.mp3")
+    play2_sound = pygame.mixer.Sound("player2.mp3")
+    compe_sound = pygame.mixer.Sound("competition.mp3")
+    prac_sound = pygame.mixer.Sound("practice.mp3")
     #fonts
     pygame.font.init()
     myfont = pygame.font.Font('Georgia.ttf', 30)
