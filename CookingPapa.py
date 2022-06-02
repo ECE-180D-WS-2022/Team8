@@ -55,6 +55,7 @@ plate = 4
 #globals
 
 #scoring parameters
+counter2 = 0
 sabotage_penalty = 0
 time_bonus = 0
 excellency_bonus = 0 
@@ -120,7 +121,7 @@ x_c_1 = 0
 y_c_1 = 0
 x_c_2 = 0
 y_c_2 = 0
-counter = 0 
+counter2 = 0 
 x_pos  = 0
 
 #recipe declarations
@@ -147,7 +148,7 @@ class Playerimg():
 		self.images_right = []
 		self.images_left = []
 		self.index = 0
-		self.counter = 0
+		self.counter2 = 0
 		for num in range(1, 5):
 			img_right = pygame.image.load(f'images/chef/chef{num}.png')
 			img_right = pygame.transform.scale(img_right, (300, 600))
@@ -173,12 +174,12 @@ class Playerimg():
         #moving left
 		if (self.rect.x+150 - x_pos) < -18:
 			dx -= 5
-			self.counter += 1
+			self.counter2 += 1
 			self.direction = 1
 		#moving right
 		elif (self.rect.x+150 - x_pos) > 18 and x_pos >=200:
 			dx += 5
-			self.counter += 1
+			self.counter2 += 1
 			self.direction = -1
 
 
@@ -190,7 +191,7 @@ class Playerimg():
 
 		if (walk_s==3):
 			if abs(walk_memory+self.rect.x+150 - x_pos)/2>9:
-				self.counter = 0	
+				self.counter2 = 0	
 				self.index += 1
 				if self.index >= len(self.images_right):
 					self.index = 0
@@ -293,7 +294,7 @@ def get_calibration_frames(frame):
     global x_c_2
     global y_c_1
     global y_c_2
-    global counter
+    global counter2
     x_c_1 = 200
     x_c_2 = 400
     y_c_1 = 250
@@ -343,7 +344,7 @@ def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
         flag_opponent = 1
 
 def calibration():
-    global counter
+    global counter2
     global lower_thresh_player
     global upper_thresh_player
     surface = pygame.display.set_mode([1200,800])
@@ -352,16 +353,16 @@ def calibration():
         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         cv2.flip(frame, 1)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        if counter <= 301:
+        if counter2 <= 301:
             get_calibration_frames(frame)
-        elif counter == 302:
+        elif counter2 == 302:
             print('calibrating...')
             t.sleep(1)
             calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2)
-        elif counter > 302:
+        elif counter2 > 302:
             print('exiting calibration...')
             return
-        counter = counter+1
+        counter2 = counter2+1
     # The video uses BGR colors and PyGame needs RGB
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         surf = pygame.surfarray.make_surface(frame)
@@ -449,7 +450,8 @@ def task(action):
     return
 
 def displayScore():
-    global practice_flag, time_bonus, excellency_bonus, sabotage_penalty, excellency_bonus
+    global practice_flag, time_bonus, excellency_bonus, sabotage_penalty, excellency_bonus, score, final_score
+    global opp_time_bonus, opp_excellency_bonus, opp_sabotage_penalty, opp_score, opp_final_score
     time_bonus = '+ ' + str(time_bonus) + ' x 10'
     sabotage_penalty = '- ' + str(sabotage_penalty) + ' x 10'
     excellency_bonus = '+ ' + str(int(excellency_bonus))
@@ -491,6 +493,10 @@ def displayScore():
         win.blit(finalscoreimg,(0,0))
         win.blit(msg_finalscore,(470,400))
         pygame.display.update()
+        t.sleep(10)
+    elif practice_flag == 0:
+
+        t.sleep(10)
 
 def check_game():
     global all_recipes, current_recipe, timer_time, in_cooking, time_bonus
@@ -622,9 +628,27 @@ def on_message(client, userdata, message):
         elif int(message_received) == 0:
             speed = 0
     elif str(flag_received) == str(FLAG_SCORE):
-        score_received = 1
+
         if in_cooking == 2:
-            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
+            temp = str(message_received)
+            tempadd = ''
+            index = 0
+            for i in range(len(temp)):
+                if temp[i] != ' ':
+                    tempadd = tempadd + temp[i]
+                else:
+                    if index == 0:
+                        opp_score = int(tempadd)
+                    elif index == 1:
+                        opp_sabotage_penalty = int(tempadd)
+                    elif index == 2:
+                        opp_time_bonus = int(tempadd)
+                    elif index == 3:
+                        opp_excellency_bonus = int(tempadd)
+                    index = index + 1
+                    tempadd = ''
+            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(int(score))+' '+str(int(sabotage_penalty))+' '+str(int(time_bonus))+' '+str(int(excellency_bonus)), qos=1)
+        score_received = 1
     elif flag_received == str(MESSAGE):
         print(str(message_received))
     elif str(message.topic) == (str(flag_player)+'Team8C'):
@@ -839,7 +863,7 @@ def main():
                         txt = 'go'
                     if txt == 'go' or txt == 'no':
                         next_action()
-                        if x_pos > 900:
+                        if x_pos >= 900:
                             if int(area_to_go) == counter:
                                 position = counter
                                 cv2.destroyAllWindows()
@@ -1018,7 +1042,7 @@ def main():
         if practice_flag == 1:
             displayScore()
         else:
-            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
+            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(score)+' '+str(sabotage_penalty)+' '+str(time_bonus)+' '+str(excellency_bonus), qos=1)
             while score_received == 0:
                 pass
             displayScore()
@@ -1122,8 +1146,12 @@ if __name__ == '__main__':
 
     scorebreakimg = pygame.image.load('images/score_break.png')
     calculateimg = pygame.image.load('images/calculating_scores.png')
+    opponentimg = pygame.image.load('images/opponent_score.png')
+    opp_scorebreakimg = pygame.image.load('images/opp_score_break.png')
     scoring_vid0 = moviepy.editor.VideoFileClip('images/score1.mp4')
     scoring_vid1 = moviepy.editor.VideoFileClip('images/score2.mp4')
+    opp_scoring_vid0 = moviepy.editor.VideoFileClip('images/opponent_score1.mp4')
+    opp_scoring_vid1 = moviepy.editor.VideoFileClip('images/opponent_score2.mp4')
 
     pizza_finish = pygame.image.load('finished_dishes/finished_pizza.png')
     pasta_finish = pygame.image.load('finished_dishes/finished_pasta.png')
