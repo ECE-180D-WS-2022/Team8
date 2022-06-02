@@ -653,11 +653,16 @@ def from_speech():
     global speech_said
     r = sr.Recognizer()
     txt = '0'
-    rate, data = wavfile.read("receive.wav")
-    # perform noise reduction
-    reduced_noise = nr.reduce_noise(y=data, sr=rate)
-    wavfile.write("receive_reduced_noise.wav", rate, reduced_noise)
-    hello=sr.AudioFile('receive_reduced_noise.wav')
+    # try:
+    #     rate, data = wavfile.read("receive.wav")
+    # except ValueError:
+    #     txt = '0'
+    #     speech_said = False
+    #     return txt.lower()
+    # # perform noise reduction
+    # reduced_noise = nr.reduce_noise(y=data, sr=rate)
+    # wavfile.write("receive_reduced_noise.wav", rate, reduced_noise)
+    hello=sr.AudioFile('receive.wav')
     with hello as source:
         try:
             audio = r.record(source)
@@ -672,7 +677,7 @@ def from_speech():
             txt = '0'
             speech_said = False
             return txt.lower()
-        except sr.ValueError:
+        except ValueError:
             txt = '0'
             speech_said = False
             return txt.lower()
@@ -777,7 +782,7 @@ def main():
     #WAITING FOR OPPONENT
     #####################
     difficulty = '0'
-    speech_said = True
+    speech_said = False
     difficulty_sel_vid.preview()
     while (txt.lower() != 'easy' and txt.lower() != 'normal' and txt.lower() != 'hard'):
         win.blit(diffimg,(0,0))
@@ -953,7 +958,7 @@ def main():
                         txt = 'cut'
                     elif 'o' in txt:
                         txt = 'roll'
-                    if txt.lower() == 'knife' and int(action_to_do) == int(FLAG_CUTTING): 
+                    if txt.lower() == 'cut' and int(action_to_do) == int(FLAG_CUTTING): 
                         action = FLAG_CUTTING
                         if practice_flag == 1:
                             cut_vid.preview()
