@@ -4,7 +4,8 @@ from multiprocessing.dummy import freeze_support
 from pickle import FALSE
 from ssl import ALERT_DESCRIPTION_BAD_CERTIFICATE_HASH_VALUE
 #from socketserver import ThreadingUnixDatagramServer
-import time as t 
+import time as t
+from matplotlib.pyplot import flag 
 import paho.mqtt.client as mqtt
 import speech_recognition as sr
 import random
@@ -52,8 +53,16 @@ plate = 4
 ##CONST GLOBALS
 
 #globals
+
+#scoring parameters
+sabotage_penalty = 0
 time_bonus = 0
 excellency_bonus = 0 
+score = 0
+timer_time = 0
+final_score = 0 
+#scoring parameters
+
 walk_s = 0
 walk_memory = 0
 recipe_count = 0
@@ -66,13 +75,11 @@ last_action = 0
 flag_player = 0
 flag_opponent = 0
 flag_received = 0
-score = 0
 message_received = ''
 speed = 1
 current_goal = 0
 gamestart = 1
 speech_said = False
-timer_time = 0
 meh = 1
 good = 2 
 excellent = 3
@@ -89,7 +96,7 @@ rolling_dough = []
 shred_cheese = []
 stir_pasta = []
 stir_sauce = []
-
+practice_flag = 0
 
 
 #colors
@@ -288,8 +295,8 @@ def get_calibration_frames(frame):
 def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     global lower_thresh_player
     global upper_thresh_player
-    global prev_x
-    global prev_y
+    global flag_player
+    global flag_opponent
     global x_pos
     cv2.rectangle(frame, (x_c_1, y_c_1), (x_c_2, y_c_2), (0, 255, 0), 3)
     calibration_frame = frame[y_c_1:y_c_2, x_c_1:x_c_2]
@@ -316,6 +323,15 @@ def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     hsv_avg = np.array([int(avg_h),int(avg_s),int(avg_v)])
     lower_thresh_player = np.array([int(avg_h)-30,int(avg_s)-40,int(avg_v)-40])
     upper_thresh_player = np.array([int(avg_h)+30,int(avg_s)+100,int(avg_v)+100])
+    if int(avg_h) <= 20 and int(avg_h) >= 0 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 70 and int(avg_v) >= 50:
+        flag_player = 1
+        flag_opponent = 2
+    elif int(avg_h) <= 180 and int(avg_h) >= 160 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 70 and int(avg_v) >= 50:
+        flag_player = 1
+        flag_opponent = 2
+    else:
+        flag_player = 2
+        flag_opponent = 1
 
 def calibration():
     global counter
@@ -423,29 +439,60 @@ def task(action):
     last_action = action
     return
 
-def displayScore(score, opponent_score, feedback):
-    global flag_player
-    msg_score= myfont.render(str(round(score)), False, (0,0,0))
-    msg_opponent = myfont.render(str(round(opponent_score)), False,(0,0,0))
-    msg_feedback= myfont.render(feedback, False, (0,0,0))
-    str(round(score))
-    if flag_player == 3:
-        win.blit(vs_score, (0,0))
-    else:
-        win.blit(vs_score_opp,(0,0))
-    win.blit(msg_score, (900,670))
-    win.blit(msg_opponent, (1000,750))
-    win.blit(msg_feedback, (350,400))
+def displayScore():
+    global practice_flag, time_bonus, excellency_bonus, sabotage_penalty, excellency_bonus
+    time_bonus = '+ ' + str(time_bonus) + ' x 10'
+    sabotage_penalty = '- ' + str(sabotage_penalty) + ' x 10'
+    excellency_bonus = '+ ' + str(int(excellency_bonus))
+    score = str(int(score)) + ' s'
+    scorefont = pygame.font.Font('Bukhari Script.ttf', 72)
+    finalfont = pygame.font.Font('Bukhari Script.ttf', 120)
+    msg_time_bonus = scorefont.render(str(time_bonus),False,(236, 233, 218))
+    msg_time_bonus2 = scorefont.render(str(time_bonus),False,(187, 56, 49))
+    msg_excellency_bonus = scorefont.render(str(excellency_bonus),False,(236, 233, 218))
+    msg_excellency_bonus2 = scorefont.render(str(excellency_bonus),False,(187, 56, 49))
+    msg_sabotage_penalty = scorefont.render(str(sabotage_penalty),False,(236, 233, 218))
+    msg_sabotage_penalty2 = scorefont.render(str(sabotage_penalty),False,(187, 56, 49))
+    msg_score = scorefont.render(str(score),False,(236, 233, 218))
+    msg_score2 = scorefont.render(str(score),False,(187, 56, 49))
+    msg_finalscore = finalfont.render(str(final_score), False, (236, 233, 218))
+
+    scoring_vid0.preview()
+    win.blit(scorebreakimg,(0,0))
     pygame.display.update()
+    win.blit(msg_time_bonus2,(590,265))
+    win.blit(msg_time_bonus,(585,260))
+    t.sleep(1)
+    pygame.display.update()
+    win.blit(msg_excellency_bonus2,(815,388))
+    win.blit(msg_excellency_bonus,(810,383))
+    t.sleep(1)
+    pygame.display.update()
+    win.blit(msg_sabotage_penalty2,(805,508))
+    win.blit(msg_sabotage_penalty,(800,503))
+    t.sleep(1)
+    pygame.display.update()
+    win.blit(msg_score2,(555,633))
+    win.blit(msg_score,(550,628))
+    t.sleep(1)
+    pygame.display.update()
+    t.sleep(2)
+    if practice_flag == 1:
+        scoring_vid1.preview()
+        win.blit(finalscoreimg,(0,0))
+        win.blit(msg_finalscore,(470,400))
+        pygame.display.update()
 
 def check_game():
-    global all_recipes, current_recipe, timer_time, in_cooking
+    global all_recipes, current_recipe, timer_time, in_cooking, time_bonus
     length = len(all_recipes[0])
     for k in range(len(all_recipes)):
         if all_recipes[k][0] != '0':
             for i in range(1,length):
                 if all_recipes[k][i][0] != '0':
                     all_recipes[k][i] = '0' + str(timer_time)   #indicate done flag and store time
+                    if (timer_time < 12):
+                        time_bonus = time_bonus + 1
                     if i == length - 1:
                         all_recipes[k][0] = '0'
                         if k == len(all_recipes) - 1:
@@ -543,6 +590,7 @@ def on_message(client, userdata, message):
     global current_recipe
     global counter, board, stove, plate
     global feedback_msg
+    global final_score
     #data received as b'message'
     temporary = str(message.payload)
     message_received = temporary[4:-1]
@@ -564,13 +612,13 @@ def on_message(client, userdata, message):
             speed = 0
     elif str(flag_received) == str(FLAG_SCORE):
         if in_cooking == 2:
-            if 1000-float(score) > 1000-float(message_received):
-                displayScore(score, float(message_received),'You are better than the other idiot sandwich. Congration.')
+            if final_score:
+                displayScore()
                 #print('You are better than the other idiot sandwich. Congration.')
                 #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
                 client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
             else:
-                displayScore(score, float(message_received), 'You lost. Try a little harder next time would ya?')
+                displayScore()
                 #print('You lost. Try a little harder next time would ya?')
                 #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
                 client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
@@ -662,15 +710,12 @@ def main():
     #####################
     #GLOBAL DECLARATIONS
     #####################
-    global score
+    global score, excellency_bonus, time_bonus, sabotage_penalty, final_score
     global in_cooking
-    global flag_opponent
-    global flag_player
+    global flag_opponent, flag_player
     global last_action
     global x_pos
     global position
-    global timer_time
-    global current_msg
     global current_recipe
     global speech_said
     global action_to_do, area_to_go, ingr_to_do
@@ -690,6 +735,20 @@ def main():
     #CALIBRATION PHASE
     ##################
 
+    #####################
+    #PLAYER SUBSCRIPTIONS
+    #####################
+    if flag_player == 1:
+        play1vid.preview()
+    elif flag_player == 2:
+        play2vid.preview()
+    client.subscribe(str(flag_player)+'Team8', qos=1)
+    client.subscribe(str(flag_player)+'Team8A',qos=2)
+    client.subscribe(str(flag_player)+'Team8C', qos = 1)
+    #####################
+    #PLAYER SUBSCRIPTIONS
+    #####################
+
     ################
     #STARTING SCREEN
     ################
@@ -697,9 +756,8 @@ def main():
     modvid.preview()
     while txt.lower() != 'practice' and txt.lower() != 'competition':
         win.blit(modimg,(0,0))
-        print('Say Practice to practice and Competition to play against an opponent')
         #win.blit(intro, (0,0))
-        txt = temp_speech()
+        txt = from_speech()
         if txt == 'brackets':  #common word
             txt = 'practice'
     ################
@@ -712,26 +770,6 @@ def main():
     practice_flag = 0
     if txt.lower() == 'practice':
         practice_flag = 1
-    else:
-        playvid.preview()
-    while(flag_player == 0):
-        win.blit(playimg,(0,0))
-        pygame.display.update()
-        #print("Which player are you playing as, Player 1 or Player 2?")
-        txt = temp_speech()
-        if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
-            flag_player = 1
-            flag_opponent = 2
-            play1vid.preview()
-        elif txt.lower() == 'player two' or txt.lower() == 'player to' or txt.lower() == 'player too' or txt.lower() == 'player 2':
-            flag_player = 2
-            flag_opponent = 1
-            play2vid.preview()
-    client.subscribe(str(flag_player)+'Team8', qos=1)
-    #subscribing to mqtt to receive IMU data
-    #messages must only be received once hence qos is 2
-    client.subscribe(str(flag_player)+'Team8A',qos=2)
-    client.subscribe(str(flag_player)+'Team8C', qos = 1)
     #####################
     #WAITING FOR OPPONENT
     #####################
@@ -742,6 +780,7 @@ def main():
         win.blit(diffimg,(0,0))
         pygame.display.update()
         if speech_said == True:
+            txt = from_speech()
             if txt.lower() == 'easy':
                 difficulty = 'easy'
                 difficulty_sel_vid1.preview()
@@ -779,6 +818,7 @@ def main():
             playerimg.update()
             screen.blit(playerimg.image, playerimg.rect)
             print_recipes()
+            screen.blit(msg_go,(500, 50))
             pygame.display.update()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -826,6 +866,7 @@ def main():
                             play_error()
                             continue
                 elif txt == 'switch' or txt == 'scramble':
+                    sabotage_penalty = sabotage_penalty + 1 #increase sabotage penalty
                     if txt == 'scramble':
                         client.publish(str(flag_opponent)+'Team8', str(SCRAMBLE), qos=1)
                     elif txt == 'switch':
@@ -846,10 +887,10 @@ def main():
             screen.blit(msg_plate,(50,50))
             pygame.display.update()
             action = '0'
-            while txt.lower() != 'cheese' and txt.lower() != 'garnish':
+            while txt.lower() != 'shred' and txt.lower() != 'garnish':
                 if speech_said == True:
                     txt = from_speech()
-                    if txt.lower() == 'cheese' and int(action_to_do) == int(FLAG_SHRED): 
+                    if txt.lower() == 'shred' and int(action_to_do) == int(FLAG_SHRED): 
                         action = FLAG_SHRED
                         if practice_flag == 1:
                             shred_vid.preview()
@@ -902,11 +943,11 @@ def main():
             screen.blit(msg_cuttingboard,(50,50))
             pygame.display.update()
             action = '0'
-            while txt.lower() != 'knife' and txt.lower() != 'roll':
+            while txt.lower() != 'cut' and txt.lower() != 'roll':
                 if speech_said == True:
                     txt = from_speech()
-                    if 'i' in txt:
-                        txt = 'knife'
+                    if 'u' in txt:
+                        txt = 'cut'
                     elif 'o' in txt:
                         txt = 'roll'
                     if txt.lower() == 'knife' and int(action_to_do) == int(FLAG_CUTTING): 
@@ -963,9 +1004,9 @@ def main():
     end_game = t.time()
     score = end_game-start_game
     #print('Your time was: ' + str(score))
+    final_score = (500 - score) + (time_bonus * 10) + excellency_bonus - (sabotage_penalty * 10)
     if practice_flag == 1:
-        displayScore(score,0,'Good Job!')
-        t.sleep(5)
+        displayScore()
         client.loop_stop()
         client.disconnect()
     else:
@@ -1007,11 +1048,12 @@ if __name__ == '__main__':
     modimg = pygame.image.load('images/game_mode_selection.png')
     playimg = pygame.image.load('images/player_selection.png')
     diffimg = pygame.image.load('images/difficulty_selection.png')
+    finalscoreimg = pygame.image.load('images/final_score.png')
 
     #videos
     pygame.init()
     mixer.init()
-    error_sound = pygame.mixer.Sound("error.wav")
+    error_sound = pygame.mixer.Sound("sounds/error_sound.wav")
     intro = moviepy.editor.VideoFileClip('images/welcome_screen.mp4')
     loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     modvid = moviepy.editor.VideoFileClip('images/game_mode_selection_vid.mp4')
@@ -1046,13 +1088,18 @@ if __name__ == '__main__':
     msg_good = myfont.render('Good job!', False, (0,0,0))
     smallFont = pygame.font.Font('Georgia.ttf', 25)
     completion= smallFont.render('You have completed this task!', False, (0,0,0))
-    current_msg = myfont.render('Say spoon to start', False, (0,0,0))
     bad_feedback = myfont.render('Do you know how to cook???', False, (0,0,0))
     good_feedback = myfont.render('Ok not bad, bad', False, (0,0,0))
     excellent_feedback = myfont.render('OK GORDON RAMSEY', False, (0,0,0))
     terrible_feedback = myfont.render('WRONG', False, (0,0,0))
     feedback_msg = bad_feedback
+    msg_go = myfont.render('Say go to enter', False, (0,0,0))
     #fonts
+
+    scorebreakimg = pygame.image.load('images/score_break.png')
+    calculateimg = pygame.image.load('images/calculating_scores.png')
+    scoring_vid0 = moviepy.editor.VideoFileClip('images/score1.mp4')
+    scoring_vid1 = moviepy.editor.VideoFileClip('images/score2.mp4')
 
     pizza_finish = pygame.image.load('finished_dishes/finished_pizza.png')
     pasta_finish = pygame.image.load('finished_dishes/finished_pasta.png')
