@@ -1240,7 +1240,7 @@ if __name__ == '__main__':
     stir_vid = moviepy.editor.VideoFileClip('images/stir_tut.mp4')
     roll_vid = moviepy.editor.VideoFileClip('images/knead_tut.mp4')
     pour_vid = moviepy.editor.VideoFileClip('images/pour_tut.mp4')
-    shred_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    shred_vid = moviepy.editor.VideoFileClip('images/grate_tut.mp4')
     garnish_vid = moviepy.editor.VideoFileClip('images/garnish_tut.mp4')
     win_vid = moviepy.editor.VideoFileClip('images/win.mp4')
     lose_vid = moviepy.editor.VideoFileClip('images/lose.mp4')
