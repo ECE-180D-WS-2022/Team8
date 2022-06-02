@@ -897,12 +897,15 @@ def main():
                 if txt.lower() == 'easy' or txt.lower() == 'idiot' or 'e' in txt:
                     difficulty = 'easy'
                     difficulty_sel_vid1.preview()
+                    txt = 'easy'
                 elif txt.lower() == 'normal':
                     difficulty = 'normal'
                     difficulty_sel_vid2.preview()
+                    txt = 'normal'
                 elif txt.lower() == 'hard':
                     difficulty = 'hard'
                     difficulty_sel_vid3.preview()
+                    txt = 'hard'
                 else:
                     txt = '0'
                 speech_said = False
