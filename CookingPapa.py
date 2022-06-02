@@ -794,9 +794,10 @@ def play_pan():
     pygame.mixer.Sound.play(pan_sound)
     pygame.mixer.music.stop()
 def multi_background_music(music_to_load):
-    mixer.init()
     mixer.music.load(music_to_load)
-    mixer.music.play(-1)
+    mixer.music.play()
+    while(1000):
+        t.sleep
     
 #########################
 ###MULTIPROCESSED CODE###
