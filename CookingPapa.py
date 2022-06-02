@@ -323,10 +323,10 @@ def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     hsv_avg = np.array([int(avg_h),int(avg_s),int(avg_v)])
     lower_thresh_player = np.array([int(avg_h)-30,int(avg_s)-40,int(avg_v)-40])
     upper_thresh_player = np.array([int(avg_h)+30,int(avg_s)+100,int(avg_v)+100])
-    if int(avg_h) <= 20 and int(avg_h) >= 0 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 70 and int(avg_v) >= 50:
+    if int(avg_h) <= 10 and int(avg_h) >= 0 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
         flag_player = 1
         flag_opponent = 2
-    elif int(avg_h) <= 180 and int(avg_h) >= 160 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 70 and int(avg_v) >= 50:
+    elif int(avg_h) <= 180 and int(avg_h) >= 170 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
         flag_player = 1
         flag_opponent = 2
     else:
@@ -755,11 +755,14 @@ def main():
     txt = '0'
     modvid.preview()
     while txt.lower() != 'practice' and txt.lower() != 'competition':
-        win.blit(modimg,(0,0))
+        if speech_said == True:
         #win.blit(intro, (0,0))
-        txt = from_speech()
-        if txt == 'brackets':  #common word
-            txt = 'practice'
+            txt = from_speech()
+            if txt == 'brackets':  #common word
+                txt = 'practice'
+            if 'sh' in txt:
+                txt = 'competition'
+            speech_said = False
     ################
     #STARTING SCREEN
     ################
@@ -792,7 +795,7 @@ def main():
                 difficulty_sel_vid3.preview()
             else:
                 txt = '0'
-                speech_said = False
+            speech_said = False
     recipe_randomizer(difficulty) 
     countdown.preview()
     start_game = t.time()
