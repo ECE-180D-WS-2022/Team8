@@ -683,7 +683,7 @@ def on_message(client, userdata, message):
                         opp_excellency_bonus = int(tempadd)
                     index = index + 1
                     tempadd = ''
-            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(int(score))+' '+str(int(sabotage_penalty))+' '+str(int(time_bonus))+' '+str(int(excellency_bonus)), qos=1)
+            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(score)+' '+str(sabotage_penalty)+' '+str(time_bonus)+' '+str(excellency_bonus), qos=1)
         score_received = 1
 
     elif flag_received == str(MESSAGE):
@@ -1078,6 +1078,10 @@ def main():
         if practice_flag == 1:
             displayScore()
         else:
+            score = int(score)
+            sabotage_penalty = int(sabotage_penalty)
+            time_bonus = int(time_bonus)
+            excellency_bonus = int(excellency_bonus)
             client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE) + str(score)+' '+str(sabotage_penalty)+' '+str(time_bonus)+' '+str(excellency_bonus), qos=1)
             while score_received == 0:
                 loading.preview()
