@@ -483,24 +483,30 @@ def displayScore():
     win.blit(msg_time_bonus2,(590,265))
     win.blit(msg_time_bonus,(585,260))
     t.sleep(1)
+    play_pan()
     pygame.display.update()
     win.blit(msg_excellency_bonus2,(815,388))
     win.blit(msg_excellency_bonus,(810,383))
     t.sleep(1)
+    play_pan()
     pygame.display.update()
     win.blit(msg_sabotage_penalty2,(805,508))
     win.blit(msg_sabotage_penalty,(800,503))
     t.sleep(1)
+    play_pan()
     pygame.display.update()
     win.blit(msg_score2,(555,633))
     win.blit(msg_score,(550,628))
     t.sleep(1)
+    play_pan()
     pygame.display.update()
     t.sleep(2)
     if practice_flag == 1:
+        play_drum()
         scoring_vid1.preview()
         win.blit(finalscoreimg,(0,0))
         win.blit(msg_finalscore,(470,400))
+        play_pan()
         pygame.display.update()
     elif practice_flag == 0:
         opp_final_score = (500 - opp_score) + (opp_time_bonus * 10) + opp_excellency_bonus - (opp_sabotage_penalty * 10)
@@ -524,25 +530,31 @@ def displayScore():
         win.blit(msg_opp_time_bonus2,(590,265))
         win.blit(msg_opp_time_bonus,(585,260))
         t.sleep(1)
+        play_pan()
         pygame.display.update()
         win.blit(msg_opp_excellency_bonus2,(815,388))
         win.blit(msg_opp_excellency_bonus,(810,383))
         t.sleep(1)
+        play_pan()
         pygame.display.update()
         win.blit(msg_opp_sabotage_penalty2,(805,508))
         win.blit(msg_opp_sabotage_penalty,(800,503))
         t.sleep(1)
+        play_pan()
         pygame.display.update()
         win.blit(msg_opp_score2,(555,633))
         win.blit(msg_opp_score,(550,628))
         t.sleep(1)
+        play_pan()
         pygame.display.update()
         t.sleep(2)
+        play_drum()
         opp_scoring_vid1.preview()
         win.blit(opponentimg,(0,0))
         win.blit(msg_opp_finalscore,(900,400))
         win.blit(msg_finalscore,(300,400))
         pygame.display.update()
+        play_pan()
 
 def check_game():
     global all_recipes, current_recipe, timer_time, in_cooking, time_bonus
@@ -770,10 +782,17 @@ def temp_speech():
 def play_error():
     pygame.mixer.Sound.play(error_sound)
     pygame.mixer.music.stop()
+
 #########################
 ###MULTIPROCESSED CODE###
 #########################
+def play_drum():
+    pygame.mixer.Sound.play(drum_sound)
+    pygame.mixer.music.stop()
 
+def play_pan():
+    pygame.mixer.Sound.play(pan_sound)
+    pygame.mixer.music.stop()
 def multi_background_music(music_to_load):
     mixer.init()
     mixer.music.load(music_to_load)
@@ -904,9 +923,13 @@ def main():
                 if switch_to_play > 0:
                     switch_rec_vid.preview()
                     switch_to_play = switch_to_play - 1
+                    pygame.mixer.Sound.play(switch_sound)
+                    pygame.mixer.music.stop()
                 if scramble_to_play > 0:
                     scramble_rec_vid.preview()
                     scramble_to_play = scramble_to_play - 1
+                    pygame.mixer.Sound.play(scramble_sound)
+                    pygame.mixer.music.stop()
                 ret, frame = cap.read()
                 frame = cv2.flip(frame,0)
                 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -1167,7 +1190,7 @@ def main():
 if __name__ == '__main__':
     freeze_support()
     load_vids()
-    background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
+    background_music = Process(target=multi_background_music, args=("sounds/comp_music.mp3",))
     background_music.daemon = True
     background_music.start()
     client = mqtt.Client()
@@ -1222,10 +1245,14 @@ if __name__ == '__main__':
     lose_vid = moviepy.editor.VideoFileClip('images/lose.mp4')
     #videos
 
-    play1_sound = pygame.mixer.Sound("player1.mp3")
-    play2_sound = pygame.mixer.Sound("player2.mp3")
-    compe_sound = pygame.mixer.Sound("competition.mp3")
-    prac_sound = pygame.mixer.Sound("practice.mp3")
+    play1_sound = pygame.mixer.Sound("player1.wav")
+    play2_sound = pygame.mixer.Sound("player2.wav")
+    compe_sound = pygame.mixer.Sound("competition.wav")
+    prac_sound = pygame.mixer.Sound("practice.wav")
+    switch_sound = pygame.mixer.Sound("switch.wav")
+    scramble_sound = pygame.mixer.Sound("scramble.wav")
+    drum_sound = pygame.mixer.Sound("sounds/drumroll.wav")
+    pan_sound = pygame.mixer.Sound("sounds/pan.wav")
     #fonts
     pygame.font.init()
     myfont = pygame.font.Font('Georgia.ttf', 30)
