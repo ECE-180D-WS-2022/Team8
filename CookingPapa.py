@@ -107,7 +107,16 @@ shred_cheese = []
 stir_pasta = []
 stir_sauce = []
 practice_flag = 0
-
+scramble_to_play = 0
+switch_to_play = 0 
+counter_high = 1200
+counter_low = 900
+board_high = 900
+board_low = 600
+stove_high = 600
+stove_low = 300
+plate_high = 300
+plate_low = 0
 
 #colors
 backgroundColor=(255, 255, 255)
@@ -452,20 +461,20 @@ def task(action):
 def displayScore():
     global practice_flag, time_bonus, excellency_bonus, sabotage_penalty, excellency_bonus, score, final_score
     global opp_time_bonus, opp_excellency_bonus, opp_sabotage_penalty, opp_score, opp_final_score
-    time_bonus = '+ ' + str(time_bonus) + ' x 10'
-    sabotage_penalty = '- ' + str(sabotage_penalty) + ' x 10'
-    excellency_bonus = '+ ' + str(int(excellency_bonus))
-    score = str(int(score)) + ' s'
+    time_bonus_msg = '+ ' + str(time_bonus) + ' x 10'
+    sabotage_penalty_msg = '- ' + str(sabotage_penalty) + ' x 10'
+    excellency_bonus_msg = '+ ' + str(int(excellency_bonus))
+    score_msg = str(int(score)) + ' s'
     scorefont = pygame.font.Font('Bukhari Script.ttf', 72)
     finalfont = pygame.font.Font('Bukhari Script.ttf', 120)
-    msg_time_bonus = scorefont.render(str(time_bonus),False,(236, 233, 218))
-    msg_time_bonus2 = scorefont.render(str(time_bonus),False,(187, 56, 49))
-    msg_excellency_bonus = scorefont.render(str(excellency_bonus),False,(236, 233, 218))
-    msg_excellency_bonus2 = scorefont.render(str(excellency_bonus),False,(187, 56, 49))
-    msg_sabotage_penalty = scorefont.render(str(sabotage_penalty),False,(236, 233, 218))
-    msg_sabotage_penalty2 = scorefont.render(str(sabotage_penalty),False,(187, 56, 49))
-    msg_score = scorefont.render(str(score),False,(236, 233, 218))
-    msg_score2 = scorefont.render(str(score),False,(187, 56, 49))
+    msg_time_bonus = scorefont.render(str(time_bonus_msg),False,(236, 233, 218))
+    msg_time_bonus2 = scorefont.render(str(time_bonus_msg),False,(187, 56, 49))
+    msg_excellency_bonus = scorefont.render(str(excellency_bonus_msg),False,(236, 233, 218))
+    msg_excellency_bonus2 = scorefont.render(str(excellency_bonus_msg),False,(187, 56, 49))
+    msg_sabotage_penalty = scorefont.render(str(sabotage_penalty_msg),False,(236, 233, 218))
+    msg_sabotage_penalty2 = scorefont.render(str(sabotage_penalty_msg),False,(187, 56, 49))
+    msg_score = scorefont.render(str(score_msg),False,(236, 233, 218))
+    msg_score2 = scorefont.render(str(score_msg),False,(187, 56, 49))
     msg_finalscore = finalfont.render(str(final_score), False, (236, 233, 218))
 
     scoring_vid0.preview()
@@ -496,18 +505,18 @@ def displayScore():
     elif practice_flag == 0:
         opp_final_score = (500 - opp_score) + (opp_time_bonus * 10) + opp_excellency_bonus - (opp_sabotage_penalty * 10)
         opp_final_score = int(opp_final_score)
-        opp_time_bonus = '+ ' + str(opp_time_bonus) + ' x 10'
-        opp_sabotage_penalty = '- ' + str(opp_sabotage_penalty) + ' x 10'
-        opp_excellency_bonus = '+ ' + str(int(opp_excellency_bonus))
-        opp_score = str(int(opp_score)) + ' s'
-        msg_opp_time_bonus = scorefont.render(str(opp_time_bonus),False,(236, 233, 218))
-        msg_opp_time_bonus2 = scorefont.render(str(opp_time_bonus),False,(187, 56, 49))
-        msg_opp_excellency_bonus = scorefont.render(str(opp_excellency_bonus),False,(236, 233, 218))
-        msg_opp_excellency_bonus2 = scorefont.render(str(opp_excellency_bonus),False,(187, 56, 49))
-        msg_opp_sabotage_penalty = scorefont.render(str(opp_sabotage_penalty),False,(236, 233, 218))
-        msg_opp_sabotage_penalty2 = scorefont.render(str(opp_sabotage_penalty),False,(187, 56, 49))
-        msg_opp_score = scorefont.render(str(opp_score),False,(236, 233, 218))
-        msg_opp_score2 = scorefont.render(str(opp_score),False,(187, 56, 49))
+        opp_time_bonus_msg = '+ ' + str(opp_time_bonus) + ' x 10'
+        opp_sabotage_penalty_msg = '- ' + str(opp_sabotage_penalty) + ' x 10'
+        opp_excellency_bonus_msg = '+ ' + str(int(opp_excellency_bonus))
+        opp_score_msg = str(int(opp_score)) + ' s'
+        msg_opp_time_bonus = scorefont.render(str(opp_time_bonus_msg),False,(236, 233, 218))
+        msg_opp_time_bonus2 = scorefont.render(str(opp_time_bonus_msg),False,(187, 56, 49))
+        msg_opp_excellency_bonus = scorefont.render(str(opp_excellency_bonus_msg),False,(236, 233, 218))
+        msg_opp_excellency_bonus2 = scorefont.render(str(opp_excellency_bonus_msg),False,(187, 56, 49))
+        msg_opp_sabotage_penalty = scorefont.render(str(opp_sabotage_penalty_msg),False,(236, 233, 218))
+        msg_opp_sabotage_penalty2 = scorefont.render(str(opp_sabotage_penalty_msg),False,(187, 56, 49))
+        msg_opp_score = scorefont.render(str(opp_score_msg),False,(236, 233, 218))
+        msg_opp_score2 = scorefont.render(str(opp_score_msg),False,(187, 56, 49))
         msg_opp_finalscore = finalfont.render(str(opp_final_score), False, (236, 233, 218))
         opp_scoring_vid0.preview()
         win.blit(opp_scorebreakimg,(0,0))
@@ -645,6 +654,8 @@ def on_message(client, userdata, message):
     global final_score, score_received
     global score, sabotage_penalty, time_bonus, excellency_bonus
     global opp_score, opp_sabotage_penalty, opp_time_bonus, opp_excellency_bonus, opp_final_score
+    global scramble_to_play, switch_to_play
+    global counter_high, counter_low, board_high, board_low, stove_high, stove_low, plate_high,plate_low
     #data received as b'message'
     temporary = str(message.payload)
     message_received = temporary[4:-1]
@@ -696,20 +707,28 @@ def on_message(client, userdata, message):
         f.close()
         speech_said = True
     elif flag_received == str(SCRAMBLE):
-        scramble_rec_vid.preview()
+        scramble_to_play = scramble_to_play + 1
         temp = meh
         meh = excellent
         excellent = temp
     elif flag_received == str(SWITCH):
-        switch_rec_vid.preview()
-        temp1 = counter
-        temp2 = board
-        temp3 = stove
-        temp4 = plate
-        counter = temp2
-        board = temp3
-        stove = temp4
-        plate = temp1
+        switch_to_play = switch_to_play + 1
+        temp1a = counter_high
+        temp1b = counter_low
+        temp2a = board_high
+        temp2b = board_low
+        temp3a = stove_high
+        temp3b = stove_low
+        temp4a = plate_high
+        temp4b = plate_low
+        counter_high = temp2a
+        counter_low = temp2b
+        board_high = temp3a
+        board_low = temp3b
+        stove_high = temp4a
+        stove_low = temp4b
+        plate_high = temp1a
+        plate_low = temp1b
 
 def from_speech():
     global speech_said
@@ -778,6 +797,8 @@ def main():
     global speech_said
     global action_to_do, area_to_go, ingr_to_do
     global practice_flag
+    global scramble_to_play, switch_to_play
+    global counter_high, counter_low, board_high, board_low, stove_high, stove_low, plate_high, plate_low
     #####################
     #GLOBAL DECLARATIONS
     #####################
@@ -871,6 +892,12 @@ def main():
             speech_said = False
                 
             while True:
+                if switch_to_play > 0:
+                    switch_rec_vid.preview()
+                    switch_to_play = switch_to_play - 1
+                if scramble_to_play > 0:
+                    scramble_rec_vid.preview()
+                    scramble_to_play = scramble_to_play - 1
                 ret, frame = cap.read()
                 frame = cv2.flip(frame,0)
                 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -881,7 +908,7 @@ def main():
                 playerimg.update()
                 screen.blit(playerimg.image, playerimg.rect)
                 print_recipes()
-                screen.blit(msg_go,(900, 50))
+                screen.blit(msg_go,(950, 50))
                 pygame.display.update()
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
@@ -892,7 +919,7 @@ def main():
                         txt = 'go'
                     if txt == 'go':
                         next_action()
-                        if x_pos >= 900:
+                        if x_pos > counter_low and x_pos < counter_high:
                             if int(area_to_go) == counter:
                                 position = counter
                                 cv2.destroyAllWindows()
@@ -901,7 +928,7 @@ def main():
                             else:
                                 play_error()
                                 continue
-                        elif x_pos > 600 and x_pos < 900:
+                        elif x_pos > board_low and x_pos < board_high:
                             if int(area_to_go) == board:
                                 position = board
                                 cv2.destroyAllWindows()
@@ -910,7 +937,7 @@ def main():
                             else:
                                 play_error()
                                 continue
-                        elif x_pos > 300 and x_pos < 600:
+                        elif x_pos > stove_low and x_pos < stove_high:
                             if int(area_to_go) == stove:
                                 position = stove
                                 cv2.destroyAllWindows()
@@ -919,7 +946,7 @@ def main():
                             else:
                                 play_error()
                                 continue
-                        elif x_pos < 300:
+                        elif x_pos < plate_high and x_pos > plate_low:
                             if int(area_to_go) == plate:
                                 position = plate
                                 cv2.destroyAllWindows()
@@ -1077,6 +1104,7 @@ def main():
         final_score = int(final_score)
         if practice_flag == 1:
             displayScore()
+            t.sleep(5)
         else:
             score = int(score)
             sabotage_penalty = int(sabotage_penalty)
@@ -1087,6 +1115,7 @@ def main():
                 loading.preview()
                 pass
             displayScore()
+            t.sleep(5)
             if final_score >= opp_final_score:
                 win_vid.preview()
             else:
@@ -1104,6 +1133,10 @@ def main():
                     txt = 'no'
                 if txt.lower() == 'yes':
                     endloop = 0
+                    score = 0
+                    sabotage_penalty = 0
+                    time_bonus = 0
+                    excellency_bonus = 0
                 elif txt.lower() == 'no':
                     endloop = 1
                 else:
