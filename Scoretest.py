@@ -79,6 +79,11 @@ calculateimg = pygame.image.load('images/calculating_scores.png')
 finalscoreimg = pygame.image.load('images/final_score.png')
 
 scoring_vid0.preview()
+
+for i in range (10):
+    t.sleep(1)
+
+scoring_vid1.preview()
 win.blit(scorebreakimg,(0,0))
 pygame.display.update()
 win.blit(msg_time_bonus2,(590,265))
