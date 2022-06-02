@@ -323,10 +323,10 @@ def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     hsv_avg = np.array([int(avg_h),int(avg_s),int(avg_v)])
     lower_thresh_player = np.array([int(avg_h)-30,int(avg_s)-40,int(avg_v)-40])
     upper_thresh_player = np.array([int(avg_h)+30,int(avg_s)+100,int(avg_v)+100])
-    if int(avg_h) <= 10 and int(avg_h) >= 0 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
+    if int(avg_h) <= 20 and int(avg_h) >= 0 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
         flag_player = 1
         flag_opponent = 2
-    elif int(avg_h) <= 180 and int(avg_h) >= 170 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
+    elif int(avg_h) <= 180 and int(avg_h) >= 160 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
         flag_player = 1
         flag_opponent = 2
     else:
