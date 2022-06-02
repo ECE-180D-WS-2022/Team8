@@ -81,5 +81,13 @@ class Playerimg():
 			self.rect.bottom = SCREEN_HEIGHT
 			dy = 0
 		
-
+		win.blit(self.image, self.rect)
 #player imaging class
+
+
+scoreFont = pygame.font.Font("chianti.ttf", 100)
+
+
+screen.blit(final_score,(0,0))
+	score_display = scoreFont.render(str(score)+' pts', False, (0,0,0))
+	screen.blit(score, (650,700))
