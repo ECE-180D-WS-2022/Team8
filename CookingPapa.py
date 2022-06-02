@@ -435,7 +435,7 @@ def task(action):
 
         win.blit(current_bg,(0,0))
         win.blit(i,(0,0))
-        win.blit(feedback_msg,(900,50))
+        win.blit(feedback_msg,(100,100))
         pygame.display.update()
         if speed != 0:
             t.sleep(0.05/speed)
@@ -715,15 +715,6 @@ def from_speech():
     global speech_said
     r = sr.Recognizer()
     txt = '0'
-    # try:
-    #     rate, data = wavfile.read("receive.wav")
-    # except ValueError:
-    #     txt = '0'
-    #     speech_said = False
-    #     return txt.lower()
-    # # perform noise reduction
-    # reduced_noise = nr.reduce_noise(y=data, sr=rate)
-    # wavfile.write("receive_reduced_noise.wav", rate, reduced_noise)
     hello=sr.AudioFile('receive.wav')
     with hello as source:
         try:
@@ -890,16 +881,16 @@ def main():
                 playerimg.update()
                 screen.blit(playerimg.image, playerimg.rect)
                 print_recipes()
-                screen.blit(msg_go,(500, 50))
+                screen.blit(msg_go,(1050, 50))
                 pygame.display.update()
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
                     #will only trigger/pause the code if speech is detected to have been said
                 if speech_said == True:
                     txt = from_speech()
-                    if 'o' in txt or 'g' in txt:
+                    if 'o' in txt or 'g' in txt or txt == '0':
                         txt = 'go'
-                    if txt == 'go' or txt == 'no':
+                    if txt == 'go':
                         next_action()
                         if x_pos >= 900:
                             if int(area_to_go) == counter:
@@ -1133,7 +1124,7 @@ if __name__ == '__main__':
     windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
     win=pygame.display.set_mode(windowsize)
     pygame.display.set_caption("Cooking Papa Beta Start")
-    bg_img = pygame.image.load('backgrounds/game_background.png')
+    bg_img = pygame.image.load('backgrounds/game_background.jpg')
     bg_img = pygame.transform.scale(bg_img, windowsize).convert()
     bg_cuttingboard = pygame.image.load('backgrounds/cuttingboard.png')
     bg_cuttingboard = pygame.transform.scale(bg_cuttingboard, windowsize).convert()
@@ -1192,10 +1183,10 @@ if __name__ == '__main__':
     smallFont = pygame.font.Font('Georgia.ttf', 25)
     completion= smallFont.render('You have completed this task!', False, (0,0,0))
     feedbackfont = pygame.font.Font('Bukhari Script.ttf', 100)
-    bad_feedback = myfont.render('BAD', False, (0,0,0))
-    good_feedback = myfont.render('GOOD', False, (0,0,0))
-    excellent_feedback = myfont.render('EXCELLENT', False, (0,0,0))
-    terrible_feedback = myfont.render('BRUH', False, (0,0,0))
+    bad_feedback = feedbackfont.render('BAD', False, (0,0,0))
+    good_feedback = feedbackfont.render('GOOD', False, (0,0,0))
+    excellent_feedback = feedbackfont.render('EXCELLENT', False, (0,0,0))
+    terrible_feedback = feedbackfont.render('BRUH', False, (0,0,0))
     feedback_msg = bad_feedback
     msg_go = myfont.render('Say go to enter', False, (0,0,0))
     #fonts
