@@ -1,9 +1,11 @@
 from email import message
+from email.iterators import walk
 from multiprocessing.dummy import freeze_support
 from pickle import FALSE
 from ssl import ALERT_DESCRIPTION_BAD_CERTIFICATE_HASH_VALUE
 #from socketserver import ThreadingUnixDatagramServer
-import time as t 
+import time as t
+from matplotlib.pyplot import flag 
 import paho.mqtt.client as mqtt
 import speech_recognition as sr
 import random
@@ -30,29 +32,48 @@ FLAG_ROLLING = '04'
 FLAG_POURING = '05'
 FLAG_SHRED = '08'
 FLAG_GARNISH = '09'
+FLAG_RECEIVE = '11'
 STOP = '00'
 SCRAMBLE = '13'
 SWITCH = '14'
 SCREEN_HEIGHT = 800
 SCREEN_WIDTH = 1200
-COUNTER = 1
-CUTTING_BOARD = 2
-STOVE = 3
-PLATE = 4
 
 MESSAGE = '10'
 
 FLAG_SCORE = '99'
 
 #BOARD POSITIONS
-cutting = 3
-stove = 2
+counter = 1
+board = 2
+stove = 3
+plate = 4
 #BOARD POSITIONS
 
 ##CONST GLOBALS
 
 #globals
+
+#scoring parameters
+sabotage_penalty = 0
 time_bonus = 0
+excellency_bonus = 0 
+score = 0
+final_score = 0
+#scoring parameters
+
+#opponent params
+opp_sabotage_penalty = 0
+opp_time_bonus = 0
+opp_excellency_bonus = 0 
+opp_score = 0
+opp_final_score = 0
+#opponent params
+
+timer_time = 0
+score_received = 0 
+walk_s = 0
+walk_memory = 0
 recipe_count = 0
 position = 0    #will be 1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 in_cooking = 0
@@ -63,15 +84,11 @@ last_action = 0
 flag_player = 0
 flag_opponent = 0
 flag_received = 0
-score = 0
 message_received = ''
 speed = 1
 current_goal = 0
 gamestart = 1
 speech_said = False
-timer_set = 0
-timer_time = 0
-timer_flag = 0
 meh = 1
 good = 2 
 excellent = 3
@@ -88,7 +105,7 @@ rolling_dough = []
 shred_cheese = []
 stir_pasta = []
 stir_sauce = []
-
+practice_flag = 0
 
 
 #colors
@@ -107,6 +124,8 @@ counter = 0
 x_pos  = 0
 
 #recipe declarations
+#CUT = '02' STIR = '03' ROLL = '04' POUR = '05' SHRED = '08' GARNISH = '09'
+#1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 all_recipes = np.empty((0,8), str)
 pizza = np.array([['pizza','4o2','2t2','5t3','3o3','5s1','8o4','9p4']])
 vegetable_soup = np.array([['vegetable soup','2','2','3','5','9']])
@@ -130,7 +149,7 @@ class Playerimg():
 		self.index = 0
 		self.counter = 0
 		for num in range(1, 5):
-			img_right = pygame.image.load(f'images/chef{num}.png')
+			img_right = pygame.image.load(f'images/chef/chef{num}.png')
 			img_right = pygame.transform.scale(img_right, (300, 600))
 			img_left = pygame.transform.flip(img_right, True, False)
 			self.images_right.append(img_right)
@@ -144,30 +163,47 @@ class Playerimg():
 		self.direction = 0
 
 	def update(self):
+		global walk_s
+		global walk_memory
+		walk_s+=1
 		dx = 0
 		dy = 0
 		walk_cooldown = 5
 
         #moving left
-		if (self.rect.x - x_pos) < 0:
+		if (self.rect.x+150 - x_pos) < -18:
+			dx -= 5
 			self.counter += 1
-			self.direction = -1
+			self.direction = 1
 		#moving right
-		if (self.rect.x - x_pos) > 0:
+		elif (self.rect.x+150 - x_pos) > 18 and x_pos >=200:
+			dx += 5
 			self.counter += 1
 			self.direction = -1
+
+
+		#print(str(self.rect.x+150) +" " + str(x_pos))
+		#print(str(x_pos))
+		#print('direction: '+ str(self.direction))
 
 		#handle animation
-		if self.counter > walk_cooldown:
-			self.counter = 0	
-			self.index += 1
-			if self.index >= len(self.images_right):
-				self.index = 0
-			if self.direction == 1:
-				self.image = self.images_right[self.index]
-			if self.direction == -1:
-				self.image = self.images_left[self.index]
 
+		if (walk_s==3):
+			if abs(walk_memory+self.rect.x+150 - x_pos)/2>9:
+				self.counter = 0	
+				self.index += 1
+				if self.index >= len(self.images_right):
+					self.index = 0
+				if self.direction == 1:
+					self.image = self.images_right[self.index]
+				if self.direction == -1:
+					self.image = self.images_left[self.index]
+			elif self.index == 1 or self.index==3:
+				if self.direction == 1:
+					self.image = self.images_right[2]
+				if self.direction == -1:
+					self.image = self.images_left[2]
+			walk_s=0
 
 		#add gravity
 		self.vel_y += 1
@@ -179,6 +215,7 @@ class Playerimg():
 
 		#update player 
 		#print(dx)
+		walk_memory = self.rect.x+150 - x_pos
 		self.rect.x = x_pos - 150
 		self.rect.y += dy
 
@@ -186,8 +223,6 @@ class Playerimg():
 			self.rect.bottom = SCREEN_HEIGHT
 			dy = 0
 #player imaging class
-
-#fonts           
 
 file_pattern = re.compile(r'.*?(\d+).*?')
 def get_order(file):
@@ -269,8 +304,8 @@ def get_calibration_frames(frame):
 def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     global lower_thresh_player
     global upper_thresh_player
-    global prev_x
-    global prev_y
+    global flag_player
+    global flag_opponent
     global x_pos
     cv2.rectangle(frame, (x_c_1, y_c_1), (x_c_2, y_c_2), (0, 255, 0), 3)
     calibration_frame = frame[y_c_1:y_c_2, x_c_1:x_c_2]
@@ -297,6 +332,15 @@ def calibrate(frame, x_c_1, y_c_1, x_c_2, y_c_2):
     hsv_avg = np.array([int(avg_h),int(avg_s),int(avg_v)])
     lower_thresh_player = np.array([int(avg_h)-30,int(avg_s)-40,int(avg_v)-40])
     upper_thresh_player = np.array([int(avg_h)+30,int(avg_s)+100,int(avg_v)+100])
+    if int(avg_h) <= 20 and int(avg_h) >= 0 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
+        flag_player = 1
+        flag_opponent = 2
+    elif int(avg_h) <= 180 and int(avg_h) >= 160 and int(avg_s) <= 255 and int(avg_v) <= 255 and int(avg_s) >= 40 and int(avg_v) >= 20:
+        flag_player = 1
+        flag_opponent = 2
+    else:
+        flag_player = 2
+        flag_opponent = 1
 
 def calibration():
     global counter
@@ -342,13 +386,11 @@ def progress_bar(current, total):
         pygame.draw.rect(win, green, pygame.Rect(350+(50*t), 821, 48, 28) )
 
 def task(action):
-    global speed, current_images, timer_set, last_action, current_recipe, ingr_to_do, area_to_go
-
+    global speed, current_images, last_action, current_recipe, ingr_to_do, area_to_go, timer_time, excellency_bonus
     #Beginning of task code
     t.sleep(CONTROLLER_BUFFER)
-    timer_set = 1
     action = int(action)
-    string_action = naming(action)
+    string_action = naming(action,1)
     win = pygame.display.set_mode(windowsize)
     #if elif statements]
     if area_to_go == '1' or area_to_go == '4':
@@ -386,45 +428,80 @@ def task(action):
     win.blit(current_bg,(0,0))
     win.blit(current_images[0],(0,0))
     pygame.display.update()
+    task_start = t.time()
     for i in current_images:
-        while speed == 0:
-            pass #dont let it run if speed = 0
         #print('Working '+str(i))
-        feedback = 'This aint it' if speed == 1 else 'Ok' if speed == 2 else 'OK GORDON RAMSEY' if speed == 3 else 'Learn to cook'
+
         win.blit(current_bg,(0,0))
         win.blit(i,(0,0))
+        win.blit(feedback_msg,(500,50))
         pygame.display.update()
         if speed != 0:
             t.sleep(0.05/speed)
-
+        if speed == 3:
+            excellency_bonus = excellency_bonus + 0.05
+        while speed == 0:
+            t.sleep(.05)
+    task_end = t.time()
+    timer_time = task_end - task_start
     #ending of task code
     last_action = action
-    timer_set = 0 
     return
 
-def displayScore(score, opponent_score, feedback):
-    global flag_player
-    msg_score= myfont.render(str(round(score)), False, (0,0,0))
-    msg_opponent = myfont.render(str(round(opponent_score)), False,(0,0,0))
-    msg_feedback= myfont.render(feedback, False, (0,0,0))
-    str(round(score))
-    if flag_player == 3:
-        win.blit(vs_score, (0,0))
-    else:
-        win.blit(vs_score_opp,(0,0))
-    win.blit(msg_score, (900,670))
-    win.blit(msg_opponent, (1000,750))
-    win.blit(msg_feedback, (350,400))
+def displayScore():
+    global practice_flag, time_bonus, excellency_bonus, sabotage_penalty, excellency_bonus
+    time_bonus = '+ ' + str(time_bonus) + ' x 10'
+    sabotage_penalty = '- ' + str(sabotage_penalty) + ' x 10'
+    excellency_bonus = '+ ' + str(int(excellency_bonus))
+    score = str(int(score)) + ' s'
+    scorefont = pygame.font.Font('Bukhari Script.ttf', 72)
+    finalfont = pygame.font.Font('Bukhari Script.ttf', 120)
+    msg_time_bonus = scorefont.render(str(time_bonus),False,(236, 233, 218))
+    msg_time_bonus2 = scorefont.render(str(time_bonus),False,(187, 56, 49))
+    msg_excellency_bonus = scorefont.render(str(excellency_bonus),False,(236, 233, 218))
+    msg_excellency_bonus2 = scorefont.render(str(excellency_bonus),False,(187, 56, 49))
+    msg_sabotage_penalty = scorefont.render(str(sabotage_penalty),False,(236, 233, 218))
+    msg_sabotage_penalty2 = scorefont.render(str(sabotage_penalty),False,(187, 56, 49))
+    msg_score = scorefont.render(str(score),False,(236, 233, 218))
+    msg_score2 = scorefont.render(str(score),False,(187, 56, 49))
+    msg_finalscore = finalfont.render(str(final_score), False, (236, 233, 218))
+
+    scoring_vid0.preview()
+    win.blit(scorebreakimg,(0,0))
     pygame.display.update()
+    win.blit(msg_time_bonus2,(590,265))
+    win.blit(msg_time_bonus,(585,260))
+    t.sleep(1)
+    pygame.display.update()
+    win.blit(msg_excellency_bonus2,(815,388))
+    win.blit(msg_excellency_bonus,(810,383))
+    t.sleep(1)
+    pygame.display.update()
+    win.blit(msg_sabotage_penalty2,(805,508))
+    win.blit(msg_sabotage_penalty,(800,503))
+    t.sleep(1)
+    pygame.display.update()
+    win.blit(msg_score2,(555,633))
+    win.blit(msg_score,(550,628))
+    t.sleep(1)
+    pygame.display.update()
+    t.sleep(2)
+    if practice_flag == 1:
+        scoring_vid1.preview()
+        win.blit(finalscoreimg,(0,0))
+        win.blit(msg_finalscore,(470,400))
+        pygame.display.update()
 
 def check_game():
-    global all_recipes, current_recipe, timer_time, in_cooking
+    global all_recipes, current_recipe, timer_time, in_cooking, time_bonus
     length = len(all_recipes[0])
     for k in range(len(all_recipes)):
         if all_recipes[k][0] != '0':
             for i in range(1,length):
                 if all_recipes[k][i][0] != '0':
                     all_recipes[k][i] = '0' + str(timer_time)   #indicate done flag and store time
+                    if (timer_time < 12):
+                        time_bonus = time_bonus + 1
                     if i == length - 1:
                         all_recipes[k][0] = '0'
                         if k == len(all_recipes) - 1:
@@ -434,15 +511,14 @@ def check_game():
 
 def recipe_randomizer(difficulty):  #randomize all recipe's length based off of difficulty
     global all_recipes
-    #length = len(all_recipes[0])
     global recipe_count
     recipe_count = 0
     if difficulty == 'hard':
-        recipe_count = 5
+        recipe_count = 3
     elif difficulty == 'normal':
-        recipe_count = 4
-    elif difficulty =='easy':
         recipe_count = 2
+    elif difficulty =='easy':
+        recipe_count = 1
     for k in range(recipe_count):
         #print('Recipe: '+ str(k+1))
         recipe = random.randint(1,2)  #randomization, will be replaced with a shuffle command (random.shuffle())
@@ -460,13 +536,16 @@ def print_recipes():
     for k in range(len(all_recipes)):
         if all_recipes[k][0] != '0':
             can_break = 1
-            msg_recipe = myfont.render('Recipe '+str(k+1)+ ' of ' + str(recipe_count) + ' ' + str(all_recipes[k][0]).upper() + '!',False,(0,0,0))
-            win.blit(msg_recipe,(10,10))
+            msg_recipe = myfont.render(str(k+1)+ ' of ' + str(recipe_count) + ': ' + str(all_recipes[k][0]).upper() + '!',False,(0,0,0))
+            win.blit(msg_recipe,(25,10))
             for i in range(1,length):
-                action = naming(int(all_recipes[k][i][0]),1) 
-                station = naming(int(all_recipes[k][i][2]),2)
-                msg_action = myfont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
-                win.blit(msg_action,(10,10+30*i))
+                action = naming(int(all_recipes[k][i][0]),1)
+                if len(all_recipes[k][i]) == 3: 
+                    station = naming(int(all_recipes[k][i][2]),2)
+                    msg_action = smallFont.render(str(i)+'. ' + action + ' - '+ station + '!', False,(0,0,0))
+                else:
+                    msg_action = smallFont.render(str(i)+'. ' + action + '!', False,(0,0,0))
+                win.blit(msg_action,(25,30+25*i))
         if can_break == 1:
             break       #only print the next available recipe
 
@@ -475,9 +554,12 @@ def classifier(str):    #classify for user output
     action_to_do = str[0]
     ingr_to_do = str[1]
     area_to_go = str[2]
+    print(action_to_do)
+    print(ingr_to_do)
+    print(area_to_go)
 
 def naming(num,type):
-    action = 'Cut' if num == 2 else 'Stir' if num == 3 else 'Roll' if num == 4 else 'Pour' if num == 5 else 'Shred' if num == 8 else 'Garnish'
+    action = 'Cut' if num == 2 else 'Stir' if num == 3 else 'Roll' if num == 4 else 'Pour' if num == 5 else 'Shred' if num == 8 else 'Garnish' if num == 9 else 'Done'
     station = 'counter' if num == 1 else 'board' if num == 2 else 'stove' if num == 3 else 'plate'
     if type == 1:
         return action
@@ -512,11 +594,14 @@ def on_message(client, userdata, message):
     global in_cooking
     global speed
     global message_received
-    global cutting
-    global stove
     global speech_said
     global meh, good, excellent
     global current_recipe
+    global counter, board, stove, plate
+    global feedback_msg
+    global final_score, score_received
+    global score, sabotage_penalty, time_bonus, excellency_bonus
+    global opp_score, opp_sabotage_penalty, opp_time_bonus, opp_excellency_bonus, opp_final_score
     #data received as b'message'
     temporary = str(message.payload)
     message_received = temporary[4:-1]
@@ -524,62 +609,22 @@ def on_message(client, userdata, message):
     #print(temporary)
     #print(message_received)
     #score flag received
-    if (str(flag_received) == str(FLAG_STIR)):
+    if (str(flag_received) == str(FLAG_RECEIVE)):
         if int(message_received) == 1:
             speed = meh
+            feedback_msg = bad_feedback
         elif int(message_received) == 2:
             speed = good
+            feedback_msg = good_feedback
         elif int(message_received) == 3:
             speed = excellent
-    elif (str(flag_received) == str(FLAG_CUTTING)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_POURING)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_ROLLING)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_SHRED)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
-    elif (str(flag_received) == str(FLAG_GARNISH)):
-        if int(message_received) == 1:
-            speed = meh
-        elif int(message_received) == 2:
-            speed = good
-        elif int(message_received) == 3:
-            speed = excellent
+            feedback_msg = excellent_feedback
+        elif int(message_received) == 0:
+            speed = 0
     elif str(flag_received) == str(FLAG_SCORE):
+        score_received = 1
         if in_cooking == 2:
-            if 1000-float(score) > 1000-float(message_received):
-                displayScore(score, float(message_received),'You are better than the other idiot sandwich. Congration.')
-                #print('You are better than the other idiot sandwich. Congration.')
-                #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
-                client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
-            else:
-                displayScore(score, float(message_received), 'You lost. Try a little harder next time would ya?')
-                #print('You lost. Try a little harder next time would ya?')
-                #print('Your score: '+str(float(score))+'\n'+"Your opponent's score: " + str(float(message_received)))
-                client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
-            client.loop_stop()
-            client.disconnect()
+            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
     elif flag_received == str(MESSAGE):
         print(str(message_received))
     elif str(message.topic) == (str(flag_player)+'Team8C'):
@@ -589,20 +634,36 @@ def on_message(client, userdata, message):
         f.write(message.payload)
         f.close()
         speech_said = True
-    elif flag_received == str(SWITCH):
+    elif flag_received == str(SCRAMBLE):
+        scramble_rec_vid.preview()
         temp = meh
         meh = excellent
         excellent = temp
+    elif flag_received == str(SWITCH):
+        switch_rec_vid.preview()
+        temp1 = counter
+        temp2 = board
+        temp3 = stove
+        temp4 = plate
+        counter = temp2
+        board = temp3
+        stove = temp4
+        plate = temp1
 
 def from_speech():
     global speech_said
     r = sr.Recognizer()
     txt = '0'
-    rate, data = wavfile.read("receive.wav")
-    # perform noise reduction
-    reduced_noise = nr.reduce_noise(y=data, sr=rate)
-    wavfile.write("receive_reduced_noise.wav", rate, reduced_noise)
-    hello=sr.AudioFile('receive_reduced_noise.wav')
+    # try:
+    #     rate, data = wavfile.read("receive.wav")
+    # except ValueError:
+    #     txt = '0'
+    #     speech_said = False
+    #     return txt.lower()
+    # # perform noise reduction
+    # reduced_noise = nr.reduce_noise(y=data, sr=rate)
+    # wavfile.write("receive_reduced_noise.wav", rate, reduced_noise)
+    hello=sr.AudioFile('receive.wav')
     with hello as source:
         try:
             audio = r.record(source)
@@ -617,7 +678,7 @@ def from_speech():
             txt = '0'
             speech_said = False
             return txt.lower()
-        except sr.ValueError:
+        except ValueError:
             txt = '0'
             speech_said = False
             return txt.lower()
@@ -635,32 +696,18 @@ def temp_speech():
         txt = '0'
         return txt
 
+def play_error():
+    pygame.mixer.Sound.play(error_sound)
+    pygame.mixer.music.stop()
 #########################
 ###MULTIPROCESSED CODE###
 #########################
 
-def multi_timer(timer_type,conn):
-    global timer_time
-    while True:
-        timer_set = conn.recv()
-        if timer_type == str(1): #space for other timer types
-        #Starting a normal timer
-            index = 0
-            while(timer_set == 1): #only reset timer IF timer_set is run, otherwise dont 
-                t.sleep(1)
-                index = index+1
-            if(timer_set == 0):
-                conn.send(index)
-                print(index)
-
 def multi_background_music(music_to_load):
     mixer.init()
     mixer.music.load(music_to_load)
-    mixer.music.play()
-    while(1):
-        pass
+    mixer.music.play(-1)
     
-
 #########################
 ###MULTIPROCESSED CODE###
 #########################
@@ -669,18 +716,15 @@ def main():
     #####################
     #GLOBAL DECLARATIONS
     #####################
-    global score
+    global score, excellency_bonus, time_bonus, sabotage_penalty, final_score
     global in_cooking
-    global flag_opponent
-    global flag_player
+    global flag_opponent, flag_player
     global last_action
     global x_pos
     global position
-    global timer_set
-    global timer_time
-    global current_msg
     global current_recipe
     global speech_said
+    global action_to_do, area_to_go, ingr_to_do
     #####################
     #GLOBAL DECLARATIONS
     #####################
@@ -697,276 +741,304 @@ def main():
     #CALIBRATION PHASE
     ##################
 
-    ################
-    #MULTIPROCESSING CALL
-    ################
-    conn1, conn2 = Pipe()
-    timers = Process(target = multi_timer, args=(1,conn2))
-    timers.start()
-    ################
-    #MULTIPROCESSING CALL
-    ################
-
-    ################
-    #STARTING SCREEN
-    ################
-    txt = '0'
-    modvid.preview()
-    while txt.lower() != 'practice' and txt.lower() != 'competition':
-        win.blit(modimg,(0,0))
-        print('Say Practice to practice and Competition to play against an opponent')
-        #win.blit(intro, (0,0))
-        txt = temp_speech()
-        if txt == 'brackets':  #common word
-            txt = 'practice'
-    ################
-    #STARTING SCREEN
-    ################
-
     #####################
-    #WAITING FOR OPPONENT
+    #PLAYER SUBSCRIPTIONS
     #####################
-    if txt.lower() == 'practice':
-        flag_player = 2
-        client.subscribe('2Team8A', qos = 2)
-    else:
-        playvid.preview()
-    while(flag_player == 0):
-        win.blit(playimg,(0,0))
-        pygame.display.update()
-        #print("Which player are you playing as, Player 1 or Player 2?")
-        txt = temp_speech()
-        if txt.lower() == 'player one' or txt.lower() == 'player won' or txt.lower() == 'player 1':
-            flag_player = 1
-            flag_opponent = 2
-            play1vid.preview()
-        elif txt.lower() == 'player two' or txt.lower() == 'player to' or txt.lower() == 'player too' or txt.lower() == 'player 2':
-            flag_player = 2
-            flag_opponent = 1
-            play2vid.preview()
+    if flag_player == 1:
+        play1vid.preview()
+    elif flag_player == 2:
+        play2vid.preview()
     client.subscribe(str(flag_player)+'Team8', qos=1)
-    #subscribing to mqtt to receive IMU data
-    #messages must only be received once hence qos is 2
     client.subscribe(str(flag_player)+'Team8A',qos=2)
     client.subscribe(str(flag_player)+'Team8C', qos = 1)
     #####################
-    #WAITING FOR OPPONENT
+    #PLAYER SUBSCRIPTIONS
     #####################
+    endloop = 0
+    while(endloop != 1):
+        ################
+        #STARTING SCREEN
+        ################
+        txt = '0'
+        modvid.preview()
+        while txt.lower() != 'practice' and txt.lower() != 'competition':
+            if speech_said == True:
+            #win.blit(intro, (0,0))
+                txt = from_speech()
+                if txt == 'brackets':  #common word
+                    txt = 'practice'
+                if 'sh' in txt:
+                    txt = 'competition'
+                speech_said = False
+        ################
+        #STARTING SCREEN
+        ################
 
-    loading.preview()
-    start_game = t.time()
-    print('Randomizing Recipes: ')
-    recipe_randomizer('easy') 
-
-    ####################
-    #PLAYER LOCALIZATION
-    ####################
-    while(in_cooking != 2):
-        clock = pygame.time.Clock()
-        fps = 60
-        playerimg = Playerimg(100, 900 - 130)
-        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption('Cooking Papa Beta Testing')
+        #####################
+        #WAITING FOR OPPONENT
+        #####################
+        practice_flag = 0
+        if txt.lower() == 'practice':
+            practice_flag = 1
+        #####################
+        #WAITING FOR OPPONENT
+        #####################
+        difficulty = '0'
         speech_said = False
-            
-        while True:
-            ret, frame = cap.read()
-            frame = cv2.flip(frame,0)
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            track_player(frame, lower_thresh_player, upper_thresh_player)
-            #define game variables
-            clock.tick(fps)
-            screen.blit(bg_img, (0, 0))
-            playerimg.update()
-            screen.blit(playerimg.image, playerimg.rect)
-            print_recipes()
+        difficulty_sel_vid.preview()
+        while (txt.lower() != 'easy' and txt.lower() != 'normal' and txt.lower() != 'hard'):
+            win.blit(diffimg,(0,0))
             pygame.display.update()
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-                #will only trigger/pause the code if speech is detected to have been said
             if speech_said == True:
                 txt = from_speech()
-                if txt == 'go' or txt == 'no':
-                    next_action()
-                    if x_pos > 900:
-                        if int(area_to_go) == COUNTER:
-                            position = COUNTER
-                            cv2.destroyAllWindows()
-                            in_cooking = 1
-                            break
-                        else:
-                            continue
-                    elif x_pos > 600 and x_pos < 900:
-                        if int(area_to_go) == CUTTING_BOARD:
-                            position = CUTTING_BOARD
-                            cv2.destroyAllWindows()
-                            in_cooking = 1
-                            break
-                        else:
-                            continue
-                    elif x_pos > 300 and x_pos < 600:
-                        if int(area_to_go) == STOVE:
-                            position = STOVE
-                            cv2.destroyAllWindows()
-                            in_cooking = 1
-                            break
-                        else:
-                            continue
-                    elif x_pos < 300:
-                        if int(area_to_go) == PLATE:
-                            position = PLATE
-                            cv2.destroyAllWindows()
-                            in_cooking = 1
-                            break
-                        else:
-                            continue
-                elif txt == 'switch' or txt == 'scramble':
-                    if txt == 'scramble':
-                        client.publish(str(flag_opponent)+'Team8', str(SCRAMBLE), qos=1)
-                    elif txt == 'switch':
-                        client.publish(str(flag_opponent)+'Team8', str(SWITCH), qos=1)
-                else:   #reset speech_said boolean
-                    speech_said = False
-    ####################
-    #PLAYER LOCALIZATION
-    ####################
+                if txt.lower() == 'easy':
+                    difficulty = 'easy'
+                    difficulty_sel_vid1.preview()
+                elif txt.lower() == 'normal':
+                    difficulty = 'normal'
+                    difficulty_sel_vid2.preview()
+                elif txt.lower() == 'hard':
+                    difficulty = 'hard'
+                    difficulty_sel_vid3.preview()
+                else:
+                    txt = '0'
+                speech_said = False
+        recipe_randomizer(difficulty) 
+        countdown.preview()
+        start_game = t.time()
+        ####################
+        #PLAYER LOCALIZATION
+        ####################
+        while(in_cooking != 2):
+            clock = pygame.time.Clock()
+            fps = 60
+            playerimg = Playerimg(100, 900 - 130)
+            screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+            pygame.display.set_caption('Cooking Papa Beta Testing')
+            speech_said = False
+                
+            while True:
+                ret, frame = cap.read()
+                frame = cv2.flip(frame,0)
+                hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                track_player(frame, lower_thresh_player, upper_thresh_player)
+                #define game variables
+                clock.tick(fps)
+                screen.blit(bg_img, (0, 0))
+                playerimg.update()
+                screen.blit(playerimg.image, playerimg.rect)
+                print_recipes()
+                screen.blit(msg_go,(500, 50))
+                pygame.display.update()
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                    #will only trigger/pause the code if speech is detected to have been said
+                if speech_said == True:
+                    txt = from_speech()
+                    if 'o' in txt or 'g' in txt:
+                        txt = 'go'
+                    if txt == 'go' or txt == 'no':
+                        next_action()
+                        if x_pos > 900:
+                            if int(area_to_go) == counter:
+                                position = counter
+                                cv2.destroyAllWindows()
+                                in_cooking = 1
+                                break
+                            else:
+                                play_error()
+                                continue
+                        elif x_pos > 600 and x_pos < 900:
+                            if int(area_to_go) == board:
+                                position = board
+                                cv2.destroyAllWindows()
+                                in_cooking = 1
+                                break
+                            else:
+                                play_error()
+                                continue
+                        elif x_pos > 300 and x_pos < 600:
+                            if int(area_to_go) == stove:
+                                position = stove
+                                cv2.destroyAllWindows()
+                                in_cooking = 1
+                                break
+                            else:
+                                play_error()
+                                continue
+                        elif x_pos < 300:
+                            if int(area_to_go) == plate:
+                                position = plate
+                                cv2.destroyAllWindows()
+                                in_cooking = 1
+                                break
+                            else:
+                                play_error()
+                                continue
+                    elif txt == 'switch' or txt == 'scramble':
+                        sabotage_penalty = sabotage_penalty + 1 #increase sabotage penalty
+                        if txt == 'scramble':
+                            client.publish(str(flag_opponent)+'Team8', str(SCRAMBLE), qos=1)
+                        elif txt == 'switch':
+                            client.publish(str(flag_opponent)+'Team8', str(SWITCH), qos=1)
+                    else:   #reset speech_said boolean
+                        speech_said = False
+        ####################
+        #PLAYER LOCALIZATION
+        ####################
 
-    ###############
-    #PLAYER ACTIONS
-    ###############
-        if position == PLATE:
-            #ask IMU for plate classifier data
-            txt = '0'
-            screen.blit(bg_tile,(0,0))
-            screen.blit(msg_plate,(50,50))
-            screen.blit(msg_exit,(900,50))
-            pygame.display.update()
-            action = '0'
-            while txt.lower() != 'cheese' and txt.lower() != 'garnish':
-                if speech_said == True:
-                    txt = from_speech()
-                    if txt.lower() == 'cheese' and int(action_to_do) == int(FLAG_SHRED): 
-                        action = FLAG_SHRED
-                    elif txt.lower() == 'garnish' and int(action_to_do) == int(FLAG_GARNISH): 
-                        action = FLAG_GARNISH
-                    else:
-                        txt = '0'   #reset for while loop
-            client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is plating',qos = 1)
-            client.publish(str(flag_player)+'Team8B', str(action), qos=1)
-            conn1.send(1)
-            task(action)
-            conn1.send(0)
-            t.sleep(1)
-            timer_time = conn1.recv()
-            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
-        elif position == STOVE:
-            #ask IMU for stove classifier data
-            txt = '0'
-            screen.blit(bg_stove,(0,0))
-            screen.blit(msg_stove,(50,50))
-            screen.blit(msg_exit,(900,50))
-            pygame.display.update()
-            action = '0'
-            while txt.lower() != 'spoon' and txt.lower() != 'pour':
-                if speech_said == True:
-                    txt = from_speech()
-                    if 'o' in txt:
-                        txt = 'spoon'
-                    elif txt == 'poor' or txt == '4':
-                        txt = 'pour'
-                    if txt.lower() == 'spoon' and int(action_to_do) == int(FLAG_STIR): 
-                        action = FLAG_STIR
-                    elif txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
-                        action = FLAG_POURING
-                    else:
-                        txt = '0'   #reset for while loop
-            client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is at the stove',qos = 1)
-            client.publish(str(flag_player)+'Team8B', str(action), qos=1)
-            conn1.send(1)
-            task(action)
-            conn1.send(0)
-            t.sleep(1)
-            timer_time = conn1.recv()
-            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
-        elif position == CUTTING_BOARD:
-            #ask IMU for cutting classifier data
-            txt = '0'
-            screen.blit(bg_cuttingboard,(0,0))
-            screen.blit(msg_cuttingboard,(50,50))
-            screen.blit(msg_exit,(900,50))
-            pygame.display.update()
-            action = '0'
-            while txt.lower() != 'knife' and txt.lower() != 'roll':
-                if speech_said == True:
-                    txt = from_speech()
-                    if 'i' in txt:
-                        txt = 'knife'
-                    elif 'o' in txt:
-                        txt = 'roll'
-                    if txt.lower() == 'knife' and int(action_to_do) == int(FLAG_CUTTING): 
-                        action = FLAG_CUTTING
-                    elif txt.lower() == 'roll' and int(action_to_do) == int(FLAG_ROLLING): 
-                        action = FLAG_ROLLING
-                    else:
-                        txt = '0'   #reset for while loop
-            client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is at the cutting board',qos = 1)
-            client.publish(str(flag_player)+'Team8B', str(action), qos=1)
-            conn1.send(1)
-            task(action)
-            conn1.send(0)
-            t.sleep(1)
-            timer_time = conn1.recv()
-            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
-        elif position == COUNTER:
-            #ask IMU for rolling classifier data
-            txt = '0'
-            screen.blit(bg_tile,(0,0))
-            screen.blit(msg_counter,(50,50))
-            screen.blit(msg_exit,(900,50))
-            pygame.display.update()
-            action = '0'
-            while txt.lower() != 'pour':
-                if speech_said == True:
-                    txt = from_speech()
-                    if txt == 'poor' or txt == '4':
-                        txt = 'pour'
-                    if txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
-                        action = FLAG_POURING
-                    else:
-                        txt = '0'   #reset for while loop
-            client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is at the counter',qos = 1)
-            client.publish(str(flag_player)+'Team8B', str(action), qos=1)
-            conn1.send(1)
-            task(action)
-            conn1.send(0)
-            t.sleep(1)
-            timer_time = conn1.recv()
-            client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
-        in_cooking = 0
-    ###############
-    #PLAYER ACTIONS
-    ###############
+        ###############
+        #PLAYER ACTIONS
+        ###############
+            if position == plate:
+                #ask IMU for plate classifier data
+                txt = '0'
+                screen.blit(bg_tile,(0,0))
+                screen.blit(msg_plate,(50,50))
+                pygame.display.update()
+                action = '0'
+                while txt.lower() != 'shred' and txt.lower() != 'garnish':
+                    if speech_said == True:
+                        txt = from_speech()
+                        if txt.lower() == 'shred' and int(action_to_do) == int(FLAG_SHRED): 
+                            action = FLAG_SHRED
+                            if practice_flag == 1:
+                                shred_vid.preview()
+                        elif txt.lower() == 'garnish' and int(action_to_do) == int(FLAG_GARNISH): 
+                            action = FLAG_GARNISH
+                            if practice_flag == 1:
+                                garnish_vid.preview()
+                        else:
+                            txt = '0'   #reset for while loop
+                            play_error()
+                client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is plating',qos = 1)
+                client.publish(str(flag_player)+'Team8B', str(action), qos=1)
+                task(action)
+                t.sleep(.2)
+                client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
+            elif position == stove:
+                #ask IMU for stove classifier data
+                txt = '0'
+                screen.blit(bg_stove,(0,0))
+                screen.blit(msg_stove,(50,50))
+                pygame.display.update()
+                action = '0'
+                while txt.lower() != 'stir' and txt.lower() != 'pour':
+                    if speech_said == True:
+                        txt = from_speech()
+                        if 'st' in txt:
+                            txt = 'stir'
+                        elif txt == 'poor' or txt == '4' or txt == 'port':
+                            txt = 'pour'
+                        if txt.lower() == 'stir' and int(action_to_do) == int(FLAG_STIR): 
+                            action = FLAG_STIR
+                            if practice_flag == 1:
+                                stir_vid.preview()
+                        elif txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
+                            action = FLAG_POURING
+                            if practice_flag == 1:
+                                pour_vid.preview()
+                        else:
+                            txt = '0'   #reset for while loop
+                            play_error()
+                client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is at the stove',qos = 1)
+                client.publish(str(flag_player)+'Team8B', str(action), qos=1)
+                task(action)
+                t.sleep(.2)
+                client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
+            elif position == board:
+                #ask IMU for cutting classifier data
+                txt = '0'
+                screen.blit(bg_cuttingboard,(0,0))
+                screen.blit(msg_cuttingboard,(50,50))
+                pygame.display.update()
+                action = '0'
+                while txt.lower() != 'cut' and txt.lower() != 'roll':
+                    if speech_said == True:
+                        txt = from_speech()
+                        if 'u' in txt:
+                            txt = 'cut'
+                        elif 'o' in txt:
+                            txt = 'roll'
+                        if txt.lower() == 'cut' and int(action_to_do) == int(FLAG_CUTTING): 
+                            action = FLAG_CUTTING
+                            if practice_flag == 1:
+                                cut_vid.preview()
+                        elif txt.lower() == 'roll' and int(action_to_do) == int(FLAG_ROLLING): 
+                            action = FLAG_ROLLING
+                            if practice_flag == 1:
+                                roll_vid.preview()
+                        else:
+                            txt = '0'   #reset for while loop
+                            play_error()
+                client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is at the cutting board',qos = 1)
+                client.publish(str(flag_player)+'Team8B', str(action), qos=1)
+                task(action)
+                t.sleep(.2)
+                client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
+            elif position == counter:
+                #ask IMU for rolling classifier data
+                txt = '0'
+                screen.blit(bg_tile,(0,0))
+                screen.blit(msg_counter,(50,50))
+                pygame.display.update()
+                action = '0'
+                while txt.lower() != 'pour':
+                    if speech_said == True:
+                        txt = from_speech()
+                        if txt == 'poor' or txt == '4':
+                            txt = 'pour'
+                        if txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
+                            action = FLAG_POURING
+                            if practice_flag == 1:
+                                pour_vid.preview()
+                        else:
+                            txt = '0'   #reset for while loop
+                            play_error()
+                client.publish(str(flag_opponent)+'Team8',str(MESSAGE)+'Your opponent is at the counter',qos = 1)
+                client.publish(str(flag_player)+'Team8B', str(action), qos=1)
+                task(action)
+                t.sleep(.2)
+                client.publish(str(flag_player)+'Team8B', str(STOP), qos=1)
+            in_cooking = 0
+        ###############
+        #PLAYER ACTIONS
+        ###############
 
 
+        #########
+        #GAME END
+        #########
+            check_game()
+            print_recipes()
+        end_game = t.time()
+        score = end_game-start_game
+        #print('Your time was: ' + str(score))
+        final_score = (500 - score) + (time_bonus * 10) + excellency_bonus - (sabotage_penalty * 10)
+        if practice_flag == 1:
+            displayScore()
+        else:
+            client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
+            while score_received == 0:
+                pass
+            displayScore()
+        reset_vid.preview()
+        txt = '0'
+        speech_said = False
+        while(txt.lower() != 'yes' and txt.lower() != 'no'):
+            if speech_said == True:
+                if txt.lower() == 'yes':
+                    endloop = 0
+                elif txt.lower() == 'no':
+                    endloop = 1
+                else:
+                    txt = '0'
+                speech_said = False
+    client.loop_stop()
+    client.disconnect()
     #########
     #GAME END
     #########
-        check_game()
-        print_recipes()
-    end_game = t.time()
-    score = end_game-start_game
-    #print('Your time was: ' + str(score))
-    if flag_player == 2:
-        displayScore(score,0,'Good Job!')
-        t.sleep(10)
-        client.loop_stop()
-        client.disconnect()
-    client.publish(str(flag_opponent)+'Team8', str(FLAG_SCORE)+str(score), qos=1)
-    #########
-    #GAME END
-    #########
-    while True:
-        pass
 
 ##################
 #GAME STARTS HERE#
@@ -976,8 +1048,9 @@ def main():
 if __name__ == '__main__':
     freeze_support()
     load_vids()
-    background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
-    background_music.start()
+    #background_music = Process(target=multi_background_music, args=("sounds/background_music_italian.mp3",))
+    #background_music.daemon = True
+    #background_music.start()
     client = mqtt.Client()
     windowsize = (SCREEN_WIDTH, SCREEN_HEIGHT)
     win=pygame.display.set_mode(windowsize)
@@ -997,10 +1070,14 @@ if __name__ == '__main__':
     calimg = pygame.image.load('images/calibration_instructions.png')
     modimg = pygame.image.load('images/game_mode_selection.png')
     playimg = pygame.image.load('images/player_selection.png')
+    diffimg = pygame.image.load('images/difficulty_selection.png')
+    finalscoreimg = pygame.image.load('images/final_score.png')
 
     #videos
     pygame.init()
-    pygame.mixer.quit()
+    mixer.init()
+    reset_vid = moviepy.editor.VideoFileClip('images/play_again.mp4')
+    error_sound = pygame.mixer.Sound("sounds/error_sound.wav")
     intro = moviepy.editor.VideoFileClip('images/welcome_screen.mp4')
     loading = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     modvid = moviepy.editor.VideoFileClip('images/game_mode_selection_vid.mp4')
@@ -1009,21 +1086,44 @@ if __name__ == '__main__':
     playvid = moviepy.editor.VideoFileClip('images/player_selection_vid.mp4')
     play1vid = moviepy.editor.VideoFileClip('images/player_1_selected.mp4')
     play2vid = moviepy.editor.VideoFileClip('images/player_2_selected.mp4')
+    difficulty_sel_vid = moviepy.editor.VideoFileClip('images/difficulty_selection.mp4')
+    difficulty_sel_vid1 = moviepy.editor.VideoFileClip('images/difficulty_selection1.mp4')
+    difficulty_sel_vid2 = moviepy.editor.VideoFileClip('images/difficulty_selection2.mp4')
+    difficulty_sel_vid3 = moviepy.editor.VideoFileClip('images/difficulty_selection3.mp4')
+    switch_rec_vid = moviepy.editor.VideoFileClip('images/switch_sabotage.mp4')
+    switch_send_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    scramble_rec_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    scramble_send_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    cut_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    stir_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    roll_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    pour_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    shred_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
+    garnish_vid = moviepy.editor.VideoFileClip('images/loading_screen.mp4')
     #videos
 
     #fonts
-    #pygame.font.init()
-    myfont = pygame.font.SysFont('Bukhari Script.ttf', 40)
-    msg_plate = myfont.render('Say cheese or garnish to start', False, (0,0,0))
-    msg_stove = myfont.render('Say spoon to start', False, (0,0,0))
-    msg_cuttingboard = myfont.render('Say knife or roll to start', False, (0,0,0))
+    pygame.font.init()
+    myfont = pygame.font.Font('Georgia.ttf', 30)
+    msg_plate = myfont.render('Say shred or garnish to start', False, (0,0,0))
+    msg_stove = myfont.render('Say stir or pour to start', False, (0,0,0))
+    msg_cuttingboard = myfont.render('Say cut or roll to start', False, (0,0,0))
     msg_counter = myfont.render('Say pour to start', False, (0,0,0))
-    msg_exit = myfont.render('Say exit to return', False, (0,0,0))
     msg_good = myfont.render('Good job!', False, (0,0,0))
-    smallFont = pygame.font.SysFont('Bukhari Script.ttf', 30)
+    smallFont = pygame.font.Font('Georgia.ttf', 25)
     completion= smallFont.render('You have completed this task!', False, (0,0,0))
-    current_msg = myfont.render('Say spoon to start', False, (0,0,0))
+    bad_feedback = myfont.render('Do you know how to cook???', False, (0,0,0))
+    good_feedback = myfont.render('Ok not bad, bad', False, (0,0,0))
+    excellent_feedback = myfont.render('OK GORDON RAMSEY', False, (0,0,0))
+    terrible_feedback = myfont.render('WRONG', False, (0,0,0))
+    feedback_msg = bad_feedback
+    msg_go = myfont.render('Say go to enter', False, (0,0,0))
     #fonts
+
+    scorebreakimg = pygame.image.load('images/score_break.png')
+    calculateimg = pygame.image.load('images/calculating_scores.png')
+    scoring_vid0 = moviepy.editor.VideoFileClip('images/score1.mp4')
+    scoring_vid1 = moviepy.editor.VideoFileClip('images/score2.mp4')
 
     pizza_finish = pygame.image.load('finished_dishes/finished_pizza.png')
     pasta_finish = pygame.image.load('finished_dishes/finished_pasta.png')
