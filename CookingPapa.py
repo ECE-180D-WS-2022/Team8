@@ -865,7 +865,7 @@ def main():
             pygame.display.update()
             if speech_said == True:
                 txt = from_speech()
-                if txt.lower() == 'easy' or txt.lower() == 'idiot':
+                if txt.lower() == 'easy' or txt.lower() == 'idiot' or 'e' in txt:
                     difficulty = 'easy'
                     difficulty_sel_vid1.preview()
                 elif txt.lower() == 'normal':
@@ -957,6 +957,8 @@ def main():
                                 continue
                     elif txt == 'switch' or txt == 'scramble':
                         sabotage_penalty = sabotage_penalty + 1 #increase sabotage penalty
+                        if txt.lower() == 'scrabble':
+                            txt = 'scramble'
                         if txt == 'scramble':
                             sabatoge_send_vid.preview()
                             client.publish(str(flag_opponent)+'Team8', str(SCRAMBLE), qos=1)
