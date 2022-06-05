@@ -3,6 +3,7 @@ from email.iterators import walk
 from multiprocessing.dummy import freeze_support
 from pickle import FALSE
 from ssl import ALERT_DESCRIPTION_BAD_CERTIFICATE_HASH_VALUE
+import string
 #from socketserver import ThreadingUnixDatagramServer
 import time as t
 from matplotlib.pyplot import flag 
@@ -30,6 +31,7 @@ FLAG_CUTTING = '02'
 FLAG_STIR = '03'
 FLAG_ROLLING = '04'
 FLAG_POURING = '05'
+FLAG_SAUTE = '06'
 FLAG_SHRED = '08'
 FLAG_GARNISH = '09'
 FLAG_RECEIVE = '11'
@@ -95,6 +97,8 @@ good = 2
 excellent = 3
 current_images = []
 current_recipe = '0'
+chop_carrot = []
+chop_potato = []
 chop_tomato = []
 garnish_parsley = []
 garnish_pepper = []
@@ -106,6 +110,12 @@ rolling_dough = []
 shred_cheese = []
 stir_pasta = []
 stir_sauce = []
+pour_soup = []
+pour_veggies_soup = []
+saute = []
+stir_soup = []
+pour_stirfry = []
+chop_zuchinni = []
 practice_flag = 0
 scramble_to_play = 0
 switch_to_play = 0 
@@ -137,9 +147,10 @@ x_pos  = 0
 #CUT = '02' STIR = '03' ROLL = '04' POUR = '05' SHRED = '08' GARNISH = '09'
 #1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 all_recipes = np.empty((0,8), str)
-pizza = np.array([['pizza','4o2','2t2','5t3','3o3','5s1','8o4','9p4']])
-vegetable_soup = np.array([['vegetable soup','2','2','3','5','9']])
+pizza = np.array([['pizza','4o2','2t2','5t3','3s3','5s1','8o1','9p4']])
+vegetable_soup = np.array([['vegetable soup','2t2','2c2','2z2','5o3','3o3','5v1','9e4']])
 pasta = np.array([['pasta','5p3','3p3','2t2','5t3','3s3','5s1','9p4']])
+stir_fry = np.array([['stir fry','2p2','2z2','2c2','5f3','6o3','5f1','9s4']])
 #recipe declarations
 
 #global helper literals
@@ -243,6 +254,28 @@ def get_order(file):
 
 def load_vids():        #there has to be a better way I just do not know how else
     global chop_tomato, garnish_parsley,garnish_pepper,garnish_salt,pour_pasta,pour_sauce,pour_tomato,rolling_dough,shred_cheese,stir_pasta,stir_sauce
+    global chop_carrot,chop_potato,pour_soup, pour_stirfry, pour_veggies_soup, saute,stir_soup, chop_zuchinni
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"pour_soup" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        pour_soup.append(pygame.image.load(i))
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"pour_stirfry" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        pour_stirfry.append(pygame.image.load(i))
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"pour_veggies_soup" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        pour_veggies_soup.append(pygame.image.load(i))
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"saute" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        saute.append(pygame.image.load(i))
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"stir_soup" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        stir_soup.append(pygame.image.load(i))
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"chop_carrot" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        chop_carrot.append(pygame.image.load(i))
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"chop_potato" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        chop_potato.append(pygame.image.load(i))
     loading_graphics = sorted(glob.glob('animationPNGs/'+"chop_tomato" + '/*.png'),key = get_order)
     for i in loading_graphics:
         chop_tomato.append(pygame.image.load(i))
@@ -276,7 +309,10 @@ def load_vids():        #there has to be a better way I just do not know how els
     loading_graphics = sorted(glob.glob('animationPNGs/'+"stir_sauce" + '/*.png'),key = get_order)
     for i in loading_graphics:
         stir_sauce.append(pygame.image.load(i))
-   
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"chop_zuchinni" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        chop_zuchinni.append(pygame.image.load(i))
+
 #vision processing code
 def track_player(frame,lower_thresh_player,upper_thresh_player):
     global x_pos
@@ -415,10 +451,17 @@ def task(action):
             current_images = stir_pasta
         elif ingr_to_do == 's':
             current_images = stir_sauce
-        else:
-            current_images = stir_sauce
+        elif ingr_to_do == 'o':
+            current_images = stir_soup
     elif(string_action == 'Cut'):
-        current_images = chop_tomato
+        if ingr_to_do == 'p':
+            current_images = chop_potato
+        elif ingr_to_do == 't':
+            current_images = chop_tomato
+        elif ingr_to_do == 'c':
+            current_images = chop_carrot
+        elif ingr_to_do == 'z':
+            current_images = chop_zuchinni
     elif(string_action == 'Roll'):
         current_images = rolling_dough
     elif(string_action == 'Pour'):
@@ -426,13 +469,25 @@ def task(action):
             current_images = pour_tomato
         elif ingr_to_do == 's':
             current_images = pour_sauce
-        if ingr_to_do == 'p':
+        elif ingr_to_do == 'p':
             current_images = pour_pasta
+        elif ingr_to_do == 'f':
+            current_images = pour_stirfry
+        elif ingr_to_do == 'o':
+            current_images = pour_soup
+        elif ingr_to_do == 'v':
+            current_images = pour_veggies_soup
+    elif(string_action == 'Saute'):
+        current_images = saute
     elif(string_action == 'Shred'):
         current_images = shred_cheese
     elif(string_action == 'Garnish'):
         if ingr_to_do == 'p':
             current_images = garnish_parsley
+        elif ingr_to_do == 'e':
+            current_images = garnish_pepper
+        elif ingr_to_do == 's':
+            current_images = garnish_salt
     #if elif statements
     speed = 0  #default
     win.blit(current_bg,(0,0))
@@ -1045,10 +1100,12 @@ def main():
                 screen.blit(msg_stove,(50,50))
                 pygame.display.update()
                 action = '0'
-                while txt.lower() != 'stir' and txt.lower() != 'pour':
+                while txt.lower() != 'stir' and txt.lower() != 'pour' and txt.lower() != 'saute':
                     if speech_said == True:
                         txt = from_speech()
-                        if 'st' in txt:
+                        if 'y' in txt or 'ay' in txt:
+                            txt = 'saute'
+                        elif 'st' in txt:
                             txt = 'stir'
                         elif txt == 'sir' or txt == 'her' or txt == 'dirt' or txt == 'ter':
                             txt = 'stir'
