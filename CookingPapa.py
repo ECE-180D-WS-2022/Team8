@@ -1164,12 +1164,16 @@ def main():
                 screen.blit(msg_counter,(50,50))
                 pygame.display.update()
                 action = '0'
-                while txt.lower() != 'pour':
+                while txt.lower() != 'shred' and txt.lower() != 'pour':
                     if speech_said == True:
                         txt = from_speech()
                         if txt == 'poor' or txt == '4' or txt == 'for' or txt == 'spore' or txt == 'port':
                             txt = 'pour'
-                        if txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
+                        if txt.lower() == 'shred' and int(action_to_do) == int(FLAG_SHRED): 
+                            action = FLAG_SHRED
+                            if practice_flag == 1:
+                                shred_vid.preview()
+                        elif txt.lower() == 'pour' and int(action_to_do) == int(FLAG_POURING): 
                             action = FLAG_POURING
                             if practice_flag == 1:
                                 pour_vid.preview()
