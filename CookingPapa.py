@@ -640,13 +640,15 @@ def recipe_randomizer(difficulty):  #randomize all recipe's length based off of 
         recipe_count = 1
     for k in range(recipe_count):
         #print('Recipe: '+ str(k+1))
-        recipe = random.randint(1,2)  #randomization, will be replaced with a shuffle command (random.shuffle())
+        recipe = random.randint(1,4)  #randomization, will be replaced with a shuffle command (random.shuffle())
         if recipe == 1:
             all_recipes = np.append(all_recipes, pizza, axis=0)
         elif recipe == 2:
             all_recipes = np.append(all_recipes, pasta, axis=0)
-        # elif recipe == 3:
-        #     all_recipes = np.append(all_recipes, pasta,axis=0)
+        elif recipe == 3:
+            all_recipes = np.append(all_recipes, vegetable_soup,axis=0)
+        elif recipe == 4:
+            all_recipes = np.append(all_recipes, stir_fry,axis=0)
 
 def print_recipes():
     global all_recipes
