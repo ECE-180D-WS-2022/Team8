@@ -313,7 +313,7 @@ def load_vids():        #there has to be a better way I just do not know how els
     loading_graphics = sorted(glob.glob('animationPNGs/'+"stir_sauce" + '/*.png'),key = get_order)
     for i in loading_graphics:
         stir_sauce.append(pygame.image.load(i))
-    loading_graphics = sorted(glob.glob('animationPNGs/'+"chop_zuchinni" + '/*.png'),key = get_order)
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"chop_zucchini" + '/*.png'),key = get_order)
     for i in loading_graphics:
         chop_zuchinni.append(pygame.image.load(i))
 
