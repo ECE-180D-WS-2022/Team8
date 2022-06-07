@@ -116,6 +116,7 @@ saute = []
 stir_soup = []
 pour_stirfry = []
 chop_zuchinni = []
+pour_veggies = []
 practice_flag = 0
 scramble_to_play = 0
 switch_to_play = 0 
@@ -148,9 +149,9 @@ x_pos  = 0
 #1 - counter, 2 - cutting board, 3 - stove, 4 - plating
 all_recipes = np.empty((0,8), str)
 pizza = np.array([['pizza','4o2','2t2','5t3','3s3','5s1','8o1','9p4']])
-vegetable_soup = np.array([['vegetable soup','2t2','2c2','2z2','5o3','3o3','5v1','9e4']])
+vegetable_soup = np.array([['vegetable soup','2t2','2c2','2z2','5v3','3o3','5o1','9e4']])
 pasta = np.array([['pasta','5p3','3p3','2t2','5t3','3s3','5s1','9p4']])
-stir_fry = np.array([['stir fry','2p2','2z2','2c2','5f3','6o3','5f1','9s4']])
+stir_fry = np.array([['stir fry','2p2','2z2','2c2','5g3','6o3','5f1','9s4']])
 #recipe declarations
 
 #global helper literals
@@ -255,6 +256,9 @@ def get_order(file):
 def load_vids():        #there has to be a better way I just do not know how else
     global chop_tomato, garnish_parsley,garnish_pepper,garnish_salt,pour_pasta,pour_sauce,pour_tomato,rolling_dough,shred_cheese,stir_pasta,stir_sauce
     global chop_carrot,chop_potato,pour_soup, pour_stirfry, pour_veggies_soup, saute,stir_soup, chop_zuchinni
+    loading_graphics = sorted(glob.glob('animationPNGs/'+"pour_veggies" + '/*.png'),key = get_order)
+    for i in loading_graphics:
+        pour_veggies.append(pygame.image.load(i))
     loading_graphics = sorted(glob.glob('animationPNGs/'+"pour_soup" + '/*.png'),key = get_order)
     for i in loading_graphics:
         pour_soup.append(pygame.image.load(i))
@@ -477,6 +481,8 @@ def task(action):
             current_images = pour_soup
         elif ingr_to_do == 'v':
             current_images = pour_veggies_soup
+        elif ingr_to_do == 'g':
+            current_images = pour_veggies
     elif(string_action == 'Saute'):
         current_images = saute
     elif(string_action == 'Shred'):
